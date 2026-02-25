@@ -1,0 +1,60 @@
+
+===============================================================================
+  Wisbric Owl Platform — {{ .Chart.Name }} v{{ .Chart.Version }}
+===============================================================================
+
+The following components have been deployed:
+
+  NightOwl (incident management)
+  {{- if .Values.nightowl.ingress.enabled }}
+    URL: https://{{ (index .Values.nightowl.ingress.hosts 0).host }}
+  {{- else }}
+    Access via: kubectl port-forward svc/{{ .Release.Name }}-nightowl 8080:80 -n {{ .Release.Namespace }}
+  {{- end }}
+
+  BookOwl (knowledge management)
+  {{- if .Values.bookowl.ingress.enabled }}
+    URL: https://{{ (index .Values.bookowl.ingress.hosts 0).host }}
+  {{- else }}
+    Access via: kubectl port-forward svc/{{ .Release.Name }}-bookowl-web 3001:80 -n {{ .Release.Namespace }}
+  {{- end }}
+
+  TicketOwl (ticket management)
+  {{- if .Values.ticketowl.ingress.enabled }}
+    URL: https://{{ (index .Values.ticketowl.ingress.hosts 0).host }}
+  {{- else }}
+    Access via: kubectl port-forward svc/{{ .Release.Name }}-ticketowl 8082:{{ .Values.ticketowl.service.port }} -n {{ .Release.Namespace }}
+  {{- end }}
+
+{{- if .Values.postgresql.enabled }}
+
+  PostgreSQL (Bitnami)
+    Service: {{ .Release.Name }}-postgresql:5432
+{{- end }}
+
+{{- if .Values.redis.enabled }}
+
+  Redis (Bitnami)
+    Service: {{ .Release.Name }}-redis-master:6379
+{{- end }}
+
+{{- if .Values.keycloak.enabled }}
+
+  Keycloak (OIDC)
+    Service: {{ .Release.Name }}-keycloak:80
+{{- end }}
+
+{{- if .Values.zammad.enabled }}
+
+  Zammad (ticket engine)
+    Service: {{ .Release.Name }}-zammad:8080
+{{- end }}
+
+{{- if .Values.minio.enabled }}
+
+  MinIO (S3 storage)
+    Service: {{ .Release.Name }}-minio:9000
+{{- end }}
+
+Verify all pods are running:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/part-of=wisbric

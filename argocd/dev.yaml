@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: owl-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: wisbric
+    environment: dev
+spec:
+  project: default
+
+  source:
+    chart: umbrella-owl
+    repoURL: ghcr.io/wisbric/charts
+    targetRevision: "0.1.0"
+    helm:
+      valueFiles:
+        - values-dev.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: owl-dev
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

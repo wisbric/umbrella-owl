@@ -1,0 +1,51 @@
+apiVersion: v2
+name: umbrella-owl
+description: Umbrella Helm chart for the Wisbric owl ecosystem
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Wisbric
+    url: https://wisbric.com
+keywords:
+  - wisbric
+  - nightowl
+  - bookowl
+  - ticketowl
+  - incident-management
+  - knowledge-base
+  - ticketing
+
+dependencies:
+  # -- Owl applications (OCI from GHCR)
+  - name: nightowl
+    version: "0.1.0"
+    repository: oci://ghcr.io/wisbric/charts
+  - name: bookowl
+    version: "0.1.0"
+    repository: oci://ghcr.io/wisbric/charts
+  - name: ticketowl
+    version: "0.1.0"
+    repository: oci://ghcr.io/wisbric/charts
+
+  # -- Third-party dependencies (upstream registries)
+  - name: postgresql
+    version: "16.4.1"
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: postgresql.enabled
+  - name: redis
+    version: "20.6.2"
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: redis.enabled
+  - name: keycloak
+    version: "24.4.5"
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: keycloak.enabled
+  - name: zammad
+    version: "10.3.0"
+    repository: https://zammad.github.io/zammad-helm
+    condition: zammad.enabled
+  - name: minio
+    version: "14.8.5"
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: minio.enabled

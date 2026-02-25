@@ -1,0 +1,268 @@
+# =============================================================================
+# umbrella-owl — Dev / Staging overrides
+# =============================================================================
+# Layered on top of values.yaml:
+#   helm install owl . -f values-dev.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# NightOwl
+# -----------------------------------------------------------------------------
+nightowl:
+  replicaCount:
+    api: 1
+    worker: 1
+
+  image:
+    tag: main  # track latest main branch build
+
+  frontend:
+    enabled: true
+    image:
+      tag: main
+    replicas: 1
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  api:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+
+  worker:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 125m
+        memory: 128Mi
+
+  config:
+    logLevel: debug
+    corsAllowedOrigins: "*"
+
+  secrets:
+    databaseUrl: "postgres://nightowl:changeme@owl-postgresql:5432/nightowl?sslmode=disable"
+    redisUrl: "redis://owl-redis-master:6379/0"
+
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: nightowl.dev.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  serviceMonitor:
+    enabled: false
+
+  podDisruptionBudget:
+    enabled: false
+
+# -----------------------------------------------------------------------------
+# BookOwl
+# -----------------------------------------------------------------------------
+bookowl:
+  image:
+    tag: main
+
+  web:
+    image:
+      tag: main
+    replicas: 1
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  api:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+
+  collab:
+    replicas: 1
+    image:
+      tag: main
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+    wsUrl: "wss://collab.bookowl.dev.example.com"
+    ingress:
+      enabled: true
+      host: collab.bookowl.dev.example.com
+
+  database:
+    url: "postgres://bookowl:changeme@owl-postgresql:5432/bookowl?sslmode=disable"
+
+  redis:
+    url: "redis://owl-redis-master:6379/1"
+    host: owl-redis-master
+    port: "6379"
+
+  oidc:
+    issuerUrl: ""
+    clientId: bookowl
+
+  nightowl:
+    apiUrl: "http://owl-nightowl:80"
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: bookowl.dev.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+            service: web
+          - path: /api
+            pathType: Prefix
+            service: api
+    tls: []
+
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+
+  pdb:
+    enabled: false
+
+# -----------------------------------------------------------------------------
+# TicketOwl
+# -----------------------------------------------------------------------------
+ticketowl:
+  image:
+    tag: main
+
+  api:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+
+  worker:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 125m
+        memory: 128Mi
+
+  config:
+    logLevel: debug
+    nightowlApiUrl: "http://owl-nightowl:80"
+    bookowlApiUrl: "http://owl-bookowl-api:8081"
+
+  secrets:
+    dbUrl: "postgres://ticketowl:changeme@owl-postgresql:5432/ticketowl?sslmode=disable"
+    redisUrl: "redis://owl-redis-master:6379/2"
+
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: ticketowl.dev.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  podDisruptionBudget:
+    enabled: false
+
+# -----------------------------------------------------------------------------
+# PostgreSQL
+# -----------------------------------------------------------------------------
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "dev-postgres-password"
+    database: nightowl
+  primary:
+    persistence:
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+# -----------------------------------------------------------------------------
+# Redis
+# -----------------------------------------------------------------------------
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      size: 1Gi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 125m
+        memory: 128Mi
+
+# -----------------------------------------------------------------------------
+# Keycloak — disabled in dev (use local admin auth)
+# -----------------------------------------------------------------------------
+keycloak:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Zammad — disabled in dev by default
+# -----------------------------------------------------------------------------
+zammad:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# MinIO — enabled in dev for BookOwl image storage
+# -----------------------------------------------------------------------------
+minio:
+  enabled: true
+  auth:
+    rootUser: minioadmin
+    rootPassword: minioadmin
+  defaultBuckets: bookowl-images
+  persistence:
+    size: 2Gi

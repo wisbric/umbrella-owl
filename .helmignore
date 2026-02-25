@@ -1,0 +1,8 @@
+# Patterns to ignore when building packages.
+.git
+.gitignore
+.github
+.claude
+*.md
+argocd/
+values-*.yaml
