@@ -76,7 +76,7 @@ nightowl:
   config:
     logLevel: info
     logFormat: json
-    corsAllowedOrigins: "*"
+    corsAllowedOrigins: ""
     metricsPath: /metrics
 
   secrets:
