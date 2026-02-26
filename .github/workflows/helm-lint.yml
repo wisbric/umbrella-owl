@@ -10,31 +10,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      # ---------------------------------------------------------------
-      # Checkout all repos so file:// subchart refs resolve
-      # ---------------------------------------------------------------
-      - name: Checkout umbrella-owl
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          path: umbrella-owl
-
-      - name: Checkout nightowl
-        uses: actions/checkout@v4
-        with:
-          repository: wisbric/nightowl
-          path: nightowl
-
-      - name: Checkout bookowl
-        uses: actions/checkout@v4
-        with:
-          repository: wisbric/bookowl
-          path: bookowl
-
-      - name: Checkout ticketowl
-        uses: actions/checkout@v4
-        with:
-          repository: wisbric/ticketowl
-          path: ticketowl
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -42,26 +19,34 @@ jobs:
           version: v3.17.0
 
       # ---------------------------------------------------------------
-      # Lint individual subcharts
+      # Create stub subcharts so file:// deps resolve without
+      # cross-repo checkout (each service has its own CI for linting)
       # ---------------------------------------------------------------
-      - name: Lint nightowl
-        run: helm lint nightowl/deploy/helm/nightowl
-
-      - name: Lint bookowl
-        run: helm lint bookowl/deploy/helm/bookowl
-
-      - name: Lint ticketowl
-        run: helm lint ticketowl/charts/ticketowl
+      - name: Create stub subcharts
+        run: |
+          for spec in \
+            "nightowl:nightowl/deploy/helm/nightowl" \
+            "bookowl:bookowl/deploy/helm/bookowl" \
+            "ticketowl:ticketowl/charts/ticketowl"; do
+            name="${spec%%:*}"
+            dir="../${spec#*:}"
+            mkdir -p "$dir/templates"
+            cat > "$dir/Chart.yaml" << CHARTEOF
+          apiVersion: v2
+          name: $name
+          version: 0.1.0
+          type: application
+          CHARTEOF
+            echo "{}" > "$dir/values.yaml"
+          done
 
       # ---------------------------------------------------------------
       # Lint umbrella chart
       # ---------------------------------------------------------------
       - name: Build umbrella dependencies
-        working-directory: umbrella-owl
         run: helm dep build .
 
       - name: Lint umbrella
-        working-directory: umbrella-owl
         run: helm lint .
 
       # ---------------------------------------------------------------
@@ -104,5 +89,4 @@ jobs:
           STUBEOF
 
       - name: Dry-run helm template
-        working-directory: umbrella-owl
         run: helm template owl . -f values.lab.yaml -f /tmp/values-stub-secrets.yaml --dry-run > /dev/null
