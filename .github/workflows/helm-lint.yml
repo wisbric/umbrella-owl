@@ -1,0 +1,84 @@
+name: Helm Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+
+      # ---------------------------------------------------------------
+      # Lint individual subcharts
+      # ---------------------------------------------------------------
+      - name: Lint nightowl
+        run: helm lint nightowl/deploy/helm/nightowl
+
+      - name: Lint bookowl
+        run: helm lint bookowl/deploy/helm/bookowl
+
+      - name: Lint ticketowl
+        run: helm lint ticketowl/charts/ticketowl
+
+      # ---------------------------------------------------------------
+      # Lint umbrella chart
+      # ---------------------------------------------------------------
+      - name: Build umbrella dependencies
+        run: helm dep build .
+
+      - name: Lint umbrella
+        run: helm lint .
+
+      # ---------------------------------------------------------------
+      # Dry-run template rendering with lab values
+      # Uses a stub secrets file so gitignored values.lab-secrets.yaml
+      # is not required.
+      # ---------------------------------------------------------------
+      - name: Create stub secrets for dry-run
+        run: |
+          cat > /tmp/values-stub-secrets.yaml << 'STUBEOF'
+          nightowl:
+            secrets:
+              databaseUrl: "postgres://stub:stub@localhost/nightowl"
+              sessionSecret: "stub-session-secret"
+              oidcClientSecret: "stub-oidc-secret"
+          bookowl:
+            secretKey: "stub-secret-key"
+            database:
+              url: "postgres://stub:stub@localhost/bookowl"
+            nightowl:
+              apiKey: "stub-api-key"
+          ticketowl:
+            secrets:
+              dbUrl: "postgres://stub:stub@localhost/ticketowl"
+              encryptionKey: "stub-encryption-key"
+              nightowlApiKey: "stub-api-key"
+              bookowlApiKey: "stub-api-key"
+          postgresql:
+            auth:
+              postgresPassword: "stub"
+          keycloak:
+            auth:
+              adminPassword: "stub"
+            externalDatabase:
+              password: "stub"
+          minio:
+            auth:
+              rootUser: "stub"
+              rootPassword: "stub"
+          STUBEOF
+
+      - name: Dry-run helm template
+        run: helm template owl . -f values.lab.yaml -f /tmp/values-stub-secrets.yaml --dry-run > /dev/null

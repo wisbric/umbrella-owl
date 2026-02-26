@@ -17,16 +17,16 @@ keywords:
   - ticketing
 
 dependencies:
-  # -- Owl applications (OCI from GHCR)
+  # -- Owl applications (local file refs for development; CI replaces with OCI)
   - name: nightowl
     version: "0.1.0"
-    repository: oci://ghcr.io/wisbric/charts
+    repository: "file://../nightowl/deploy/helm/nightowl"
   - name: bookowl
     version: "0.1.0"
-    repository: oci://ghcr.io/wisbric/charts
+    repository: "file://../bookowl/deploy/helm/bookowl"
   - name: ticketowl
     version: "0.1.0"
-    repository: oci://ghcr.io/wisbric/charts
+    repository: "file://../ticketowl/charts/ticketowl"
 
   # -- Third-party dependencies (upstream registries)
   - name: postgresql
@@ -38,7 +38,7 @@ dependencies:
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: redis.enabled
   - name: keycloak
-    version: "24.4.5"
+    version: "25.2.0"
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: keycloak.enabled
   - name: zammad

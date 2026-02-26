@@ -348,6 +348,7 @@ redis:
 # -----------------------------------------------------------------------------
 # Keycloak (Bitnami) — OIDC identity provider
 # Chart: oci://registry-1.docker.io/bitnamicharts/keycloak
+# Docs: https://artifacthub.io/packages/helm/bitnami/keycloak
 # Set enabled: false to use an external OIDC provider instead
 # -----------------------------------------------------------------------------
 keycloak:
@@ -355,6 +356,9 @@ keycloak:
   auth:
     adminUser: admin
     adminPassword: ""          # MUST override — no default
+  production: false
+  proxyHeaders: xforwarded     # TLS terminated at ingress
+  httpRelativePath: /
   postgresql:
     enabled: false             # Use the shared PostgreSQL instance
   externalDatabase:
@@ -363,6 +367,24 @@ keycloak:
     database: keycloak
     user: keycloak
     password: ""
+  ingress:
+    enabled: false
+    hostname: keycloak.example.com
+    ingressClassName: nginx
+    tls: false
+    annotations: {}
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  # Realm import — the umbrella chart includes a post-install Job
+  # (templates/keycloak-realm-import.yaml) that imports keycloak/owls-realm.json.
+  # Set realmImport.enabled: false to skip automatic realm bootstrap.
+  realmImport:
+    enabled: true
 
 # -----------------------------------------------------------------------------
 # Zammad — Ticket engine backend for TicketOwl
@@ -371,6 +393,13 @@ keycloak:
 # -----------------------------------------------------------------------------
 zammad:
   enabled: false
+  # Zammad bundles its own Redis subchart. The top-level Bitnami Redis
+  # helpers leak into Zammad's Redis context (Helm template name collision).
+  # Provide the missing sentinel value to prevent nil-pointer errors.
+  redis:
+    sentinel:
+      masterService:
+        enabled: false
 
 # -----------------------------------------------------------------------------
 # MinIO (Bitnami) — S3-compatible object storage for BookOwl images

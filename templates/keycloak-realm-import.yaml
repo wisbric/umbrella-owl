@@ -1,0 +1,139 @@
+{{/*
+Keycloak realm bootstrap — post-install hook
+Creates a ConfigMap with the owls realm JSON (OIDC client secret templated)
+and a Job that imports it into Keycloak via the admin REST API.
+*/}}
+{{- if and .Values.keycloak.enabled (default true .Values.keycloak.realmImport.enabled) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-keycloak-realm
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  owls-realm.json: |-
+    {{- $realm := .Files.Get "keycloak/owls-realm.json" }}
+    {{- $realm = $realm | replace "NIGHTOWL_OIDC_SECRET_PLACEHOLDER" (.Values.nightowl.secrets.oidcClientSecret | default "changeme") }}
+    {{ $realm | nindent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-keycloak-realm-import
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak-realm-import
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: import
+          image: curlimages/curl:8.11.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              KEYCLOAK_URL="http://{{ .Release.Name }}-keycloak:80"
+
+              # ---------------------------------------------------------------
+              # Wait for Keycloak to be ready (up to 10 minutes)
+              # ---------------------------------------------------------------
+              echo "Waiting for Keycloak at $KEYCLOAK_URL ..."
+              ATTEMPTS=0
+              until curl -sf "$KEYCLOAK_URL/health/ready" >/dev/null 2>&1; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ "$ATTEMPTS" -ge 60 ]; then
+                  echo "ERROR: Keycloak not ready after 10 minutes"
+                  exit 1
+                fi
+                echo "  Not ready yet (attempt $ATTEMPTS/60), retrying in 10s..."
+                sleep 10
+              done
+              echo "Keycloak is ready."
+
+              # ---------------------------------------------------------------
+              # Authenticate as admin
+              # ---------------------------------------------------------------
+              echo "Authenticating as admin..."
+              TOKEN_RESPONSE=$(curl -sf -X POST \
+                "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -d "username=$KEYCLOAK_ADMIN_USER" \
+                -d "password=$KEYCLOAK_ADMIN_PASSWORD" \
+                -d "grant_type=password" \
+                -d "client_id=admin-cli")
+
+              TOKEN=$(echo "$TOKEN_RESPONSE" | sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+              if [ -z "$TOKEN" ]; then
+                echo "ERROR: Failed to get admin access token"
+                echo "Response: $TOKEN_RESPONSE"
+                exit 1
+              fi
+              echo "Authenticated."
+
+              # ---------------------------------------------------------------
+              # Check if realm already exists
+              # ---------------------------------------------------------------
+              REALM_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+                "$KEYCLOAK_URL/admin/realms/owls" \
+                -H "Authorization: Bearer $TOKEN" || true)
+
+              if [ "$REALM_STATUS" = "200" ]; then
+                echo "Realm 'owls' already exists — skipping import."
+                exit 0
+              fi
+
+              # ---------------------------------------------------------------
+              # Import realm
+              # ---------------------------------------------------------------
+              echo "Importing realm 'owls'..."
+              IMPORT_STATUS=$(curl -sf -o /tmp/response.txt -w "%{http_code}" \
+                -X POST "$KEYCLOAK_URL/admin/realms" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d @/realm/owls-realm.json)
+
+              if [ "$IMPORT_STATUS" = "201" ]; then
+                echo "Realm 'owls' imported successfully."
+              else
+                echo "ERROR: Realm import failed (HTTP $IMPORT_STATUS)"
+                cat /tmp/response.txt 2>/dev/null || true
+                exit 1
+              fi
+          env:
+            - name: KEYCLOAK_ADMIN_USER
+              value: {{ .Values.keycloak.auth.adminUser | quote }}
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: {{ .Values.keycloak.auth.adminPassword | quote }}
+          volumeMounts:
+            - name: realm-config
+              mountPath: /realm
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: realm-config
+          configMap:
+            name: {{ .Release.Name }}-keycloak-realm
+{{- end }}

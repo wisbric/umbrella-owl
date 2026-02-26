@@ -57,8 +57,8 @@ All subcharts (owl apps and third-party dependencies) are pulled from Helm regis
 | Dependency | Helm Registry | Purpose |
 |------------|---------------|---------|
 | `postgresql` | `oci://registry-1.docker.io/bitnamicharts/postgresql` | Shared database (or one per owl app) |
-| `redis` | `oci://registry-1.docker.io/bitnamicharts/redis` | Caching, sessions, event queues |
-| `keycloak` | `oci://registry-1.docker.io/bitnamicharts/keycloak` | OIDC identity provider shared by all owl apps |
+| `redis` | `oci://registry-1.docker.io/bitnamicharts/redis` | Caching, event queues |
+| `keycloak` | `oci://registry-1.docker.io/bitnamicharts/keycloak` | OIDC identity provider shared by all owl apps (browser sessions use `wisbric_session` HttpOnly cookies via `core/pkg/auth`) |
 | `zammad` | `https://zammad.github.io/zammad-helm` | Ticket engine (TicketOwl backend) |
 | `minio` | `oci://registry-1.docker.io/bitnamicharts/minio` | S3-compatible object storage for BookOwl images (optional — can use AWS S3 instead) |
 
@@ -191,15 +191,18 @@ These are the integration points that the umbrella values must wire together:
 | NightOwl | PostgreSQL | `nightowl.secrets.databaseUrl` |
 | NightOwl | Redis | `nightowl.secrets.redisUrl` |
 | NightOwl | Keycloak | `nightowl.secrets.oidcIssuerUrl`, `oidcClientId`, `oidcClientSecret` |
+| NightOwl | Session secret | `nightowl.secrets.sessionSecretKey` (shared HMAC key for `wisbric_session` cookies) |
 | NightOwl | BookOwl | Tenant-level config (not Helm values — configured per-tenant at runtime) |
 | BookOwl | PostgreSQL | `bookowl.secrets.databaseUrl` |
 | BookOwl | Redis | `bookowl.secrets.redisUrl` |
 | BookOwl | Keycloak | `bookowl.secrets.oidcIssuer`, `oidcClientId`, `oidcClientSecret` |
+| BookOwl | Session secret | `bookowl.secrets.sessionSecretKey` (must match NightOwl's for cross-service SSO) |
 | BookOwl | S3/MinIO | `bookowl.config.storageBackend`, `s3Endpoint`, `s3Bucket`, etc. |
 | BookOwl | NightOwl | `bookowl.config.nightowlApiUrl`, `bookowl.secrets.nightowlApiKey` |
 | TicketOwl | PostgreSQL | `ticketowl.secrets.dbUrl` |
 | TicketOwl | Redis | `ticketowl.secrets.redisUrl` |
 | TicketOwl | Keycloak | `ticketowl.secrets.oidcIssuer`, `oidcClientId` |
+| TicketOwl | Session secret | `ticketowl.secrets.sessionSecretKey` (must match NightOwl's for cross-service SSO) |
 | TicketOwl | Zammad | Tenant-level config (Zammad URL + API token stored per-tenant in DB) |
 | TicketOwl | NightOwl | `ticketowl.config.nightowlApiUrl`, `ticketowl.secrets.nightowlApiKey` |
 | TicketOwl | BookOwl | `ticketowl.config.bookowlApiUrl`, `ticketowl.secrets.bookowlApiKey` |

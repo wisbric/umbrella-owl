@@ -18,7 +18,7 @@ Umbrella Helm chart that deploys the entire Wisbric owl ecosystem — [NightOwl]
 |-------|-------------|----------|-----------|
 | `postgresql` | Shared PostgreSQL 16 database | Bitnami OCI | `postgresql.enabled` |
 | `redis` | Shared Redis 7 for caching and event queues | Bitnami OCI | `redis.enabled` |
-| `keycloak` | OIDC identity provider (shared SSO) | Bitnami OCI | `keycloak.enabled` |
+| `keycloak` | OIDC identity provider (shared SSO — all apps use `wisbric_session` HttpOnly cookies) | Bitnami OCI | `keycloak.enabled` |
 | `zammad` | Ticket engine backend for TicketOwl | Zammad Helm repo | `zammad.enabled` |
 | `minio` | S3-compatible object storage for BookOwl images | Bitnami OCI | `minio.enabled` |
 
@@ -140,6 +140,7 @@ The owl applications communicate with each other and shared infrastructure. Key 
 | All apps → PostgreSQL | `<app>.secrets.databaseUrl` (or `dbUrl` for ticketowl) |
 | All apps → Redis | `<app>.secrets.redisUrl` |
 | All apps → Keycloak | `<app>.secrets.oidcIssuerUrl` / `oidcIssuer`, `oidcClientId`, `oidcClientSecret` |
+| All apps → Session secret | `<app>.secrets.sessionSecretKey` — shared HMAC key for `wisbric_session` cookies (must be the same across all owl apps for SSO) |
 | BookOwl → NightOwl | `bookowl.config.nightowlApiUrl`, `bookowl.secrets.nightowlApiKey` |
 | TicketOwl → NightOwl | `ticketowl.config.nightowlApiUrl`, `ticketowl.secrets.nightowlApiKey` |
 | TicketOwl → BookOwl | `ticketowl.config.bookowlApiUrl`, `ticketowl.secrets.bookowlApiKey` |

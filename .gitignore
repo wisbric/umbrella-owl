@@ -1,0 +1,7 @@
+# Generated secrets — NEVER commit
+values.lab-secrets.yaml
+deploy/.lab-credentials
+
+# Helm dependency artifacts
+charts/
+Chart.lock

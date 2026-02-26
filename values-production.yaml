@@ -68,7 +68,7 @@ nightowl:
     enabled: true
     className: nginx
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
+      certmanager.step.sm/cluster-issuer: step-cluster-issuer
     hosts:
       - host: nightowl.example.com
         paths:
@@ -155,7 +155,7 @@ bookowl:
     enabled: true
     className: nginx
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
+      certmanager.step.sm/cluster-issuer: step-cluster-issuer
       nginx.ingress.kubernetes.io/proxy-body-size: "20m"
     hosts:
       - host: bookowl.example.com
@@ -232,7 +232,7 @@ ticketowl:
     enabled: true
     className: nginx
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
+      certmanager.step.sm/cluster-issuer: step-cluster-issuer
     hosts:
       - host: ticketowl.example.com
         paths:
