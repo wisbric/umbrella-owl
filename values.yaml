@@ -7,11 +7,27 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# GHCR registry credentials — shared imagePullSecret for all owl sub-charts
+# The password should be a GitHub PAT with read:packages scope.
+# For lab: set username/password via values.lab-secrets.yaml
+# For production: inject via external-secrets-operator or --set
+# -----------------------------------------------------------------------------
+registryCredentials:
+  create: false
+  secretName: ghcr-credentials
+  registry: ghcr.io
+  username: ""
+  password: ""
+
+# -----------------------------------------------------------------------------
 # NightOwl — Incident management, on-call, alert routing
 # Chart: oci://ghcr.io/wisbric/charts/nightowl
 # Source values: nightowl/deploy/helm/nightowl/values.yaml
 # -----------------------------------------------------------------------------
 nightowl:
+  imagePullSecrets:
+    - name: ghcr-credentials
+
   replicaCount:
     api: 2
     worker: 1
@@ -204,7 +220,8 @@ bookowl:
     create: true
     name: ""
 
-  imagePullSecrets: []
+  imagePullSecrets:
+    - name: ghcr-credentials
   extraEnv: []
 
 # -----------------------------------------------------------------------------
@@ -213,6 +230,9 @@ bookowl:
 # Source values: ticketowl/charts/ticketowl/values.yaml
 # -----------------------------------------------------------------------------
 ticketowl:
+  imagePullSecrets:
+    - name: ghcr-credentials
+
   image:
     repository: ghcr.io/wisbric/ticketowl
     pullPolicy: IfNotPresent

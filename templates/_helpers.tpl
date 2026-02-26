@@ -39,3 +39,15 @@ app.kubernetes.io/part-of: wisbric
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 {{- end }}
+
+{{/*
+Build a docker config JSON for registry authentication.
+Usage: {{ include "umbrella-owl.dockerconfigjson" . }}
+*/}}
+{{- define "umbrella-owl.dockerconfigjson" -}}
+{{- $registry := .Values.registryCredentials.registry -}}
+{{- $username := .Values.registryCredentials.username -}}
+{{- $password := .Values.registryCredentials.password -}}
+{{- $auth := printf "%s:%s" $username $password | b64enc -}}
+{{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"auth\":\"%s\"}}}" $registry $username $password $auth | b64enc -}}
+{{- end }}

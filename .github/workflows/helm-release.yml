@@ -34,18 +34,12 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
       # ---------------------------------------------------------------
-      # Rewrite Chart.yaml: file:// refs → OCI registry, pin versions
+      # Pin Chart.yaml versions to the release tag
       # ---------------------------------------------------------------
-      - name: Rewrite umbrella Chart.yaml for OCI registry
+      - name: Pin chart versions
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          sed -i \
-            -e "s|^version:.*|version: \"$VERSION\"|" \
-            -e "s|repository: \"file://../nightowl/deploy/helm/nightowl\"|repository: ${{ env.OCI_REGISTRY }}|" \
-            -e "s|repository: \"file://../bookowl/deploy/helm/bookowl\"|repository: ${{ env.OCI_REGISTRY }}|" \
-            -e "s|repository: \"file://../ticketowl/charts/ticketowl\"|repository: ${{ env.OCI_REGISTRY }}|" \
-            Chart.yaml
-          # Pin subchart versions to this release
+          sed -i "s|^version:.*|version: \"$VERSION\"|" Chart.yaml
           sed -i "/name: nightowl/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
           sed -i "/name: bookowl/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
           sed -i "/name: ticketowl/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml

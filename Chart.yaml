@@ -17,16 +17,16 @@ keywords:
   - ticketing
 
 dependencies:
-  # -- Owl applications (local file refs for development; CI replaces with OCI)
+  # -- Owl applications (OCI from GHCR)
   - name: nightowl
     version: "0.1.0"
-    repository: "file://../nightowl/deploy/helm/nightowl"
+    repository: oci://ghcr.io/wisbric/charts
   - name: bookowl
     version: "0.1.0"
-    repository: "file://../bookowl/deploy/helm/bookowl"
+    repository: oci://ghcr.io/wisbric/charts
   - name: ticketowl
     version: "0.1.0"
-    repository: "file://../ticketowl/charts/ticketowl"
+    repository: oci://ghcr.io/wisbric/charts
 
   # -- Third-party dependencies (upstream registries)
   - name: postgresql
