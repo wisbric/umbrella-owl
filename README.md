@@ -140,7 +140,7 @@ The owl applications communicate with each other and shared infrastructure. Key 
 | All apps → PostgreSQL | `<app>.secrets.databaseUrl` (or `dbUrl` for ticketowl) |
 | All apps → Redis | `<app>.secrets.redisUrl` |
 | All apps → Keycloak | `<app>.secrets.oidcIssuerUrl` / `oidcIssuer`, `oidcClientId`, `oidcClientSecret` |
-| All apps → Session secret | `<app>.secrets.sessionSecretKey` — shared HMAC key for `wisbric_session` cookies (must be the same across all owl apps for SSO) |
+| All apps → Session secret | NightOwl: `nightowl.secrets.sessionSecret`, TicketOwl: `ticketowl.secrets.sessionSecret`, BookOwl: `bookowl.secretKey` — shared HMAC key for `wisbric_session` cookies (must be the same across all owl apps for SSO) |
 | BookOwl → NightOwl | `bookowl.config.nightowlApiUrl`, `bookowl.secrets.nightowlApiKey` |
 | TicketOwl → NightOwl | `ticketowl.config.nightowlApiUrl`, `ticketowl.secrets.nightowlApiKey` |
 | TicketOwl → BookOwl | `ticketowl.config.bookowlApiUrl`, `ticketowl.secrets.bookowlApiKey` |
