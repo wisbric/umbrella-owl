@@ -52,6 +52,7 @@ nightowl:
     enabled: true
     image:
       tag: main
+      pullPolicy: Always
     replicas: 1
     resources:
       requests:
@@ -141,6 +142,7 @@ bookowl:
   web:
     image:
       tag: main
+      pullPolicy: Always
     replicas: 1
     resources:
       requests:
@@ -255,6 +257,7 @@ ticketowl:
     enabled: true
     image:
       tag: main
+      pullPolicy: Always
     replicas: 1
     resources:
       requests:
