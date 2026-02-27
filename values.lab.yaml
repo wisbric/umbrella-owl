@@ -200,6 +200,8 @@ bookowl:
 
   oidc:
     clientId: bookowl
+    clientSecret: ""  # Set via values.lab-secrets.yaml
+    redirectUrl: "https://bookowl.devops.lab/auth/oidc/callback"
 
   nightowl:
     apiUrl: "http://owl-nightowl:80"
@@ -304,6 +306,8 @@ ticketowl:
     dbUrl: ""             # Set via values.lab-secrets.yaml
     redisUrl: ""            # Set via values.lab-secrets.yaml
     oidcClientId: "ticketowl"
+    oidcClientSecret: ""  # Set via values.lab-secrets.yaml
+    oidcRedirectUrl: "https://ticketowl.devops.lab/auth/oidc/callback"
     encryptionKey: ""     # Set via values.lab-secrets.yaml
     nightowlApiKey: ""    # Set via values.lab-secrets.yaml
     bookowlApiKey: ""     # Set via values.lab-secrets.yaml

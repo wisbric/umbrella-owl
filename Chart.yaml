@@ -2,8 +2,8 @@ apiVersion: v2
 name: umbrella-owl
 description: Umbrella Helm chart for the Wisbric owl ecosystem
 type: application
-version: 0.1.2
-appVersion: "0.1.2"
+version: 0.1.3
+appVersion: "0.1.3"
 maintainers:
   - name: Wisbric
     url: https://wisbric.com
@@ -22,10 +22,10 @@ dependencies:
     version: "0.1.6"
     repository: oci://ghcr.io/wisbric/charts
   - name: bookowl
-    version: "0.1.4"
+    version: "0.1.5"
     repository: oci://ghcr.io/wisbric/charts
   - name: ticketowl
-    version: "0.1.6"
+    version: "0.1.7"
     repository: oci://ghcr.io/wisbric/charts
 
   # -- Third-party dependencies (upstream registries)
