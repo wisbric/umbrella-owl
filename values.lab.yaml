@@ -76,7 +76,9 @@ nightowl:
     enabled: true
     className: nginx
     annotations:
-      certmanager.step.sm/cluster-issuer: step-cluster-issuer
+      cert-manager.io/issuer: step-cluster-issuer
+      cert-manager.io/issuer-kind: StepClusterIssuer
+      cert-manager.io/issuer-group: certmanager.step.sm
     hosts:
       - host: nightowl.devops.lab
         paths:
@@ -161,7 +163,9 @@ bookowl:
     enabled: true
     className: nginx
     annotations:
-      certmanager.step.sm/cluster-issuer: step-cluster-issuer
+      cert-manager.io/issuer: step-cluster-issuer
+      cert-manager.io/issuer-kind: StepClusterIssuer
+      cert-manager.io/issuer-group: certmanager.step.sm
       nginx.ingress.kubernetes.io/proxy-body-size: "20m"
     hosts:
       - host: bookowl.devops.lab
@@ -238,7 +242,9 @@ ticketowl:
     enabled: true
     className: nginx
     annotations:
-      certmanager.step.sm/cluster-issuer: step-cluster-issuer
+      cert-manager.io/issuer: step-cluster-issuer
+      cert-manager.io/issuer-kind: StepClusterIssuer
+      cert-manager.io/issuer-group: certmanager.step.sm
     hosts:
       - host: ticketowl.devops.lab
         paths:
@@ -383,7 +389,9 @@ zammad:
         hosts:
           - zammad.devops.lab
     annotations:
-      certmanager.step.sm/cluster-issuer: step-cluster-issuer
+      cert-manager.io/issuer: step-cluster-issuer
+      cert-manager.io/issuer-kind: StepClusterIssuer
+      cert-manager.io/issuer-group: certmanager.step.sm
 
 # -----------------------------------------------------------------------------
 # MinIO — S3-compatible storage for BookOwl images
