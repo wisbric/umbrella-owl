@@ -29,6 +29,14 @@ SECRETS_FILE="$REPO_DIR/values.lab-secrets.yaml"
 rand_password() { openssl rand -base64 32 | tr -d '/+=' | head -c 32; }
 rand_hex() { openssl rand -hex "$1"; }
 
+# ---------------------------------------------------------------------------
+# GHCR credentials — needed to pull private images and Helm charts
+# ---------------------------------------------------------------------------
+echo ""
+read -rp "GitHub username for GHCR: " GHCR_USERNAME
+read -rsp "GitHub PAT (read:packages scope): " GHCR_PAT
+echo ""
+
 echo "==> Generating random passwords..."
 
 # Database passwords (used in both init script and connection URLs)
@@ -76,6 +84,13 @@ cat > "$SECRETS_FILE" <<SECRETS_EOF
 # DO NOT COMMIT THIS FILE. It contains real passwords.
 # Regenerate with: ./deploy/apply-secrets.sh
 # =============================================================================
+
+# -----------------------------------------------------------------------------
+# GHCR registry credentials
+# -----------------------------------------------------------------------------
+registryCredentials:
+  username: "${GHCR_USERNAME}"
+  password: "${GHCR_PAT}"
 
 # -----------------------------------------------------------------------------
 # NightOwl secrets
@@ -170,6 +185,10 @@ CREDS_FILE="$REPO_DIR/deploy/.lab-credentials"
 cat > "$CREDS_FILE" <<CREDS_EOF
 # Lab credentials — generated $(date -u +%Y-%m-%dT%H:%M:%SZ)
 # Keep this file safe. Do NOT commit.
+
+# GHCR registry
+GHCR_USERNAME=${GHCR_USERNAME}
+GHCR_PAT=${GHCR_PAT}
 
 # PostgreSQL superuser
 PG_SUPERUSER_PASSWORD=${PG_SUPERUSER_PW}

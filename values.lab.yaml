@@ -66,8 +66,8 @@ nightowl:
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
-    redisUrl: "redis://owl-redis-master:6379/0"
-    oidcIssuerUrl: "https://keycloak.devops.lab/realms/owls"
+    redisUrl: "redis://:6201cd49f3e9e3236767d0c31ed95d97@owl-redis-master:6379/0"
+    oidcIssuerUrl: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "nightowl"
     oidcClientSecret: ""  # Set via values.lab-secrets.yaml
     sessionSecret: ""     # Set via values.lab-secrets.yaml
@@ -144,12 +144,13 @@ bookowl:
     url: ""  # Set via values.lab-secrets.yaml
 
   redis:
-    url: "redis://owl-redis-master:6379/1"
+    url: "redis://:6201cd49f3e9e3236767d0c31ed95d97@owl-redis-master:6379/1"
     host: owl-redis-master
     port: "6379"
+    password: "6201cd49f3e9e3236767d0c31ed95d97"
 
   oidc:
-    issuerUrl: "https://keycloak.devops.lab/realms/owls"
+    issuerUrl: "http://keycloak.devops.lab/realms/owls"
     clientId: bookowl
 
   nightowl:
@@ -226,8 +227,8 @@ ticketowl:
 
   secrets:
     dbUrl: ""             # Set via values.lab-secrets.yaml
-    redisUrl: "redis://owl-redis-master:6379/2"
-    oidcIssuer: "https://keycloak.devops.lab/realms/owls"
+    redisUrl: "redis://:6201cd49f3e9e3236767d0c31ed95d97@owl-redis-master:6379/2"
+    oidcIssuer: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "ticketowl"
     encryptionKey: ""     # Set via values.lab-secrets.yaml
     nightowlApiKey: ""    # Set via values.lab-secrets.yaml
@@ -256,6 +257,8 @@ ticketowl:
 # -----------------------------------------------------------------------------
 postgresql:
   enabled: true
+  image:
+    tag: latest
   auth:
     postgresPassword: ""  # Set via values.lab-secrets.yaml
     database: nightowl
@@ -278,9 +281,12 @@ postgresql:
 # -----------------------------------------------------------------------------
 redis:
   enabled: true
+  image:
+    tag: latest
   architecture: standalone
   auth:
-    enabled: false
+    enabled: true
+    password: ""  # Set via values.lab-secrets.yaml
   master:
     persistence:
       size: 2Gi
@@ -297,11 +303,18 @@ redis:
 # -----------------------------------------------------------------------------
 keycloak:
   enabled: true
+  image:
+    repository: bitnamilegacy/keycloak
+    tag: 26.3.3-debian-12-r0
   auth:
     adminUser: admin
     adminPassword: ""  # Set via values.lab-secrets.yaml
   production: false
   proxyHeaders: xforwarded
+  # Override KC_HOSTNAME to HTTP so pods can reach it via ClusterIP (no TLS)
+  extraEnvVars:
+    - name: KC_HOSTNAME
+      value: "http://keycloak.devops.lab"
   postgresql:
     enabled: false
   externalDatabase:
@@ -314,9 +327,9 @@ keycloak:
     enabled: true
     hostname: keycloak.devops.lab
     ingressClassName: nginx
-    tls: true
+    tls: false
     annotations:
-      certmanager.step.sm/cluster-issuer: step-cluster-issuer
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
   resources:
     requests:
       cpu: 200m
@@ -332,6 +345,32 @@ keycloak:
 # -----------------------------------------------------------------------------
 zammad:
   enabled: true
+  # Disable Zammad's internal PostgreSQL and Redis — use shared instances
+  zammadConfig:
+    postgresql:
+      enabled: false
+      host: owl-postgresql
+      port: 5432
+      user: zammad
+      pass: ""    # Set via values.lab-secrets.yaml
+      db: zammad
+    redis:
+      enabled: false
+      host: owl-redis-master
+      port: 6379
+      pass: ""  # Set via values.lab-secrets.yaml
+  elasticsearch:
+    image:
+      repository: bitnamilegacy/elasticsearch
+      tag: 8.12.0-debian-11-r1
+    sysctlImage:
+      registry: docker.io
+      repository: bitnamilegacy/os-shell
+      tag: 11-debian-11-r94
+  memcached:
+    image:
+      repository: bitnamilegacy/memcached
+      tag: 1.6.23-debian-11-r0
   ingress:
     enabled: true
     hosts:
@@ -351,6 +390,9 @@ zammad:
 # -----------------------------------------------------------------------------
 minio:
   enabled: true
+  image:
+    repository: bitnamilegacy/minio
+    tag: 2024.11.7-debian-12-r0
   auth:
     rootUser: ""      # Set via values.lab-secrets.yaml
     rootPassword: ""  # Set via values.lab-secrets.yaml

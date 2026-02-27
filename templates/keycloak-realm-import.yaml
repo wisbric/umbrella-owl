@@ -55,7 +55,7 @@ spec:
               # ---------------------------------------------------------------
               echo "Waiting for Keycloak at $KEYCLOAK_URL ..."
               ATTEMPTS=0
-              until curl -sf "$KEYCLOAK_URL/health/ready" >/dev/null 2>&1; do
+              until curl -sf "$KEYCLOAK_URL/realms/master" >/dev/null 2>&1; do
                 ATTEMPTS=$((ATTEMPTS + 1))
                 if [ "$ATTEMPTS" -ge 60 ]; then
                   echo "ERROR: Keycloak not ready after 10 minutes"
