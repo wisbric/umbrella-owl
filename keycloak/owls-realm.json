@@ -239,6 +239,22 @@
         }
       ],
       "groups": ["members"]
+    },
+    {
+      "username": "stefan",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Stefan",
+      "lastName": "Admin",
+      "email": "stefan@devops.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "devops",
+          "temporary": false
+        }
+      ],
+      "groups": ["admins"]
     }
   ],
   "clientScopes": [
