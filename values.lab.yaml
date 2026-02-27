@@ -28,6 +28,7 @@ nightowl:
 
   image:
     tag: main
+    pullPolicy: Always
 
   frontend:
     enabled: true
@@ -118,6 +119,7 @@ nightowl:
 bookowl:
   image:
     tag: main
+    pullPolicy: Always
 
   web:
     image:
@@ -218,6 +220,7 @@ bookowl:
 ticketowl:
   image:
     tag: main
+    pullPolicy: Always
 
   api:
     replicaCount: 1
