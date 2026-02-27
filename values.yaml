@@ -436,7 +436,14 @@ minio:
     size: 10Gi
 
 # -----------------------------------------------------------------------------
-# Global overrides
+# Global values — passed to all subcharts automatically by Helm
 # -----------------------------------------------------------------------------
+global:
+  oidc:
+    # OIDC issuer URL shared by all owl services.
+    # Each subchart falls back to this value when its own issuer is empty.
+    # Example: "https://keycloak.example.com/realms/owls"
+    issuerUrl: ""
+
 nameOverride: ""
 fullnameOverride: ""

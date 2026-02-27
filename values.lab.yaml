@@ -11,6 +11,13 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# Global — shared OIDC config for all owl services
+# -----------------------------------------------------------------------------
+global:
+  oidc:
+    issuerUrl: "http://keycloak.devops.lab/realms/owls"
+
+# -----------------------------------------------------------------------------
 # GHCR registry credentials — pull private container images and Helm charts
 # -----------------------------------------------------------------------------
 registryCredentials:
@@ -68,7 +75,6 @@ nightowl:
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
     redisUrl: ""            # Set via values.lab-secrets.yaml
-    oidcIssuerUrl: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "nightowl"
     oidcClientSecret: ""  # Set via values.lab-secrets.yaml
     oidcRedirectUrl: "https://nightowl.devops.lab/auth/oidc/callback"
@@ -171,7 +177,6 @@ bookowl:
     password: ""  # Set via values.lab-secrets.yaml
 
   oidc:
-    issuerUrl: "http://keycloak.devops.lab/realms/owls"
     clientId: bookowl
 
   nightowl:
@@ -252,7 +257,6 @@ ticketowl:
   secrets:
     dbUrl: ""             # Set via values.lab-secrets.yaml
     redisUrl: ""            # Set via values.lab-secrets.yaml
-    oidcIssuer: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "ticketowl"
     encryptionKey: ""     # Set via values.lab-secrets.yaml
     nightowlApiKey: ""    # Set via values.lab-secrets.yaml
