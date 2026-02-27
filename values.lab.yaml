@@ -82,8 +82,24 @@ nightowl:
     hosts:
       - host: nightowl.devops.lab
         paths:
+          - path: /api
+            pathType: Prefix
+            service: api
+          - path: /auth
+            pathType: Prefix
+            service: api
+          - path: /status
+            pathType: Prefix
+            service: api
+          - path: /healthz
+            pathType: Prefix
+            service: api
+          - path: /metrics
+            pathType: Prefix
+            service: api
           - path: /
             pathType: Prefix
+            service: frontend
     tls:
       - secretName: nightowl-tls
         hosts:
