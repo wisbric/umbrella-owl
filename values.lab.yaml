@@ -66,7 +66,7 @@ nightowl:
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
-    redisUrl: "redis://:6201cd49f3e9e3236767d0c31ed95d97@owl-redis-master:6379/0"
+    redisUrl: ""            # Set via values.lab-secrets.yaml
     oidcIssuerUrl: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "nightowl"
     oidcClientSecret: ""  # Set via values.lab-secrets.yaml
@@ -146,10 +146,10 @@ bookowl:
     url: ""  # Set via values.lab-secrets.yaml
 
   redis:
-    url: "redis://:6201cd49f3e9e3236767d0c31ed95d97@owl-redis-master:6379/1"
+    url: ""      # Set via values.lab-secrets.yaml
     host: owl-redis-master
     port: "6379"
-    password: "6201cd49f3e9e3236767d0c31ed95d97"
+    password: ""  # Set via values.lab-secrets.yaml
 
   oidc:
     issuerUrl: "http://keycloak.devops.lab/realms/owls"
@@ -231,7 +231,7 @@ ticketowl:
 
   secrets:
     dbUrl: ""             # Set via values.lab-secrets.yaml
-    redisUrl: "redis://:6201cd49f3e9e3236767d0c31ed95d97@owl-redis-master:6379/2"
+    redisUrl: ""            # Set via values.lab-secrets.yaml
     oidcIssuer: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "ticketowl"
     encryptionKey: ""     # Set via values.lab-secrets.yaml
