@@ -15,7 +15,7 @@
 # -----------------------------------------------------------------------------
 global:
   oidc:
-    issuerUrl: "http://keycloak.devops.lab/realms/owls"
+    issuerUrl: "https://keycloak.devops.lab/realms/owls"
 
 # -----------------------------------------------------------------------------
 # GHCR registry credentials — pull private container images and Helm charts
@@ -36,6 +36,17 @@ nightowl:
   image:
     tag: main
     pullPolicy: Always
+
+  # Mount combined CA bundle so OIDC discovery trusts HTTPS Keycloak
+  extraVolumes:
+    - name: ca-bundle
+      configMap:
+        name: combined-ca-bundle
+  extraVolumeMounts:
+    - name: ca-bundle
+      mountPath: /etc/ssl/certs/ca-certificates.crt
+      subPath: ca-certificates.crt
+      readOnly: true
 
   frontend:
     enabled: true
@@ -165,6 +176,17 @@ bookowl:
       enabled: true
       host: collab.bookowl.devops.lab
 
+  # Mount combined CA bundle so OIDC discovery trusts HTTPS Keycloak
+  extraVolumes:
+    - name: ca-bundle
+      configMap:
+        name: combined-ca-bundle
+  extraVolumeMounts:
+    - name: ca-bundle
+      mountPath: /etc/ssl/certs/ca-certificates.crt
+      subPath: ca-certificates.crt
+      readOnly: true
+
   secretKey: ""  # Set via values.lab-secrets.yaml
 
   database:
@@ -227,6 +249,19 @@ ticketowl:
     tag: main
     pullPolicy: Always
 
+  web:
+    enabled: true
+    image:
+      tag: main
+    replicas: 1
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
   api:
     replicaCount: 1
     resources:
@@ -248,6 +283,17 @@ ticketowl:
       limits:
         cpu: 125m
         memory: 128Mi
+
+  # Mount step CA cert so OIDC discovery trusts HTTPS Keycloak
+  extraVolumes:
+    - name: ca-bundle
+      configMap:
+        name: combined-ca-bundle
+  extraVolumeMounts:
+    - name: ca-bundle
+      mountPath: /etc/ssl/certs/ca-certificates.crt
+      subPath: ca-certificates.crt
+      readOnly: true
 
   config:
     logLevel: debug
@@ -272,8 +318,18 @@ ticketowl:
     hosts:
       - host: ticketowl.devops.lab
         paths:
+          - path: /api
+            pathType: Prefix
+            service: api
+          - path: /auth
+            pathType: Prefix
+            service: api
+          - path: /status
+            pathType: Prefix
+            service: api
           - path: /
             pathType: Prefix
+            service: web
     tls:
       - secretName: ticketowl-tls
         hosts:
@@ -341,10 +397,9 @@ keycloak:
     adminPassword: ""  # Set via values.lab-secrets.yaml
   production: false
   proxyHeaders: xforwarded
-  # Override KC_HOSTNAME to HTTP so pods can reach it via ClusterIP (no TLS)
   extraEnvVars:
     - name: KC_HOSTNAME
-      value: "http://keycloak.devops.lab"
+      value: "https://keycloak.devops.lab"
   postgresql:
     enabled: false
   externalDatabase:
@@ -357,9 +412,11 @@ keycloak:
     enabled: true
     hostname: keycloak.devops.lab
     ingressClassName: nginx
-    tls: false
+    tls: true
     annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      cert-manager.io/issuer: step-cluster-issuer
+      cert-manager.io/issuer-kind: StepClusterIssuer
+      cert-manager.io/issuer-group: certmanager.step.sm
   resources:
     requests:
       cpu: 200m
