@@ -70,6 +70,7 @@ nightowl:
     oidcIssuerUrl: "http://keycloak.devops.lab/realms/owls"
     oidcClientId: "nightowl"
     oidcClientSecret: ""  # Set via values.lab-secrets.yaml
+    oidcRedirectUrl: "https://nightowl.devops.lab/auth/oidc/callback"
     sessionSecret: ""     # Set via values.lab-secrets.yaml
 
   ingress:
