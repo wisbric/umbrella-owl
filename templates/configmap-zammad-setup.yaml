@@ -1,0 +1,94 @@
+{{/*
+Zammad post-install setup — ConfigMap with idempotent SQL script.
+Creates a TicketOwl service user, API token, groups, and organizations
+directly in the Zammad PostgreSQL database.
+*/}}
+{{- if and .Values.zammad.enabled .Values.zammad.ticketowlToken }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-zammad-setup
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  setup.sql: |
+    -- ================================================================
+    -- Zammad Setup — idempotent SQL for TicketOwl integration
+    -- ================================================================
+    -- This script runs against the Zammad PostgreSQL database and:
+    --   1. Creates a ticketowl-service user with Admin+Agent roles
+    --   2. Creates a persistent API token for TicketOwl
+    --   3. Creates groups: Support, Engineering, Billing
+    --   4. Creates organizations: Acme Corp, Wisbric
+    -- All operations use NOT EXISTS / ON CONFLICT guards for idempotency.
+    -- ================================================================
+
+    BEGIN;
+
+    -- 1. Create ticketowl-service user (if not exists)
+    INSERT INTO users (
+      login, firstname, lastname, email,
+      password, active, verified, role_ids,
+      updated_by_id, created_by_id,
+      created_at, updated_at
+    )
+    SELECT
+      'ticketowl-service', 'TicketOwl', 'Service', 'ticketowl-service@wisbric.local',
+      '{sha2}' || encode(digest('TicketOwlService2026!', 'sha256'), 'hex'),
+      true, true, ARRAY[]::integer[],
+      1, 1,
+      NOW(), NOW()
+    WHERE NOT EXISTS (
+      SELECT 1 FROM users WHERE login = 'ticketowl-service'
+    );
+
+    -- 2. Assign Admin + Agent roles to ticketowl-service user
+    INSERT INTO roles_users (user_id, role_id)
+    SELECT u.id, r.id
+    FROM users u, roles r
+    WHERE u.login = 'ticketowl-service'
+      AND r.name IN ('Admin', 'Agent')
+      AND NOT EXISTS (
+        SELECT 1 FROM roles_users ru
+        WHERE ru.user_id = u.id AND ru.role_id = r.id
+      );
+
+    -- 3. Create API token with known value (from ZAMMAD_TICKETOWL_TOKEN env var)
+    -- The token value is injected via sed before execution.
+    INSERT INTO tokens (
+      user_id, name, action, persistent, token,
+      created_at, updated_at
+    )
+    SELECT
+      u.id, 'TicketOwl Integration', 'api', true,
+      :'ticketowl_token',
+      NOW(), NOW()
+    FROM users u
+    WHERE u.login = 'ticketowl-service'
+      AND NOT EXISTS (
+        SELECT 1 FROM tokens t
+        WHERE t.user_id = u.id AND t.name = 'TicketOwl Integration'
+      );
+
+    -- 4. Create groups
+    INSERT INTO groups (name, active, created_at, updated_at, updated_by_id, created_by_id)
+    SELECT name, true, NOW(), NOW(), 1, 1
+    FROM (VALUES ('Support'), ('Engineering'), ('Billing')) AS g(name)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM groups WHERE groups.name = g.name
+    );
+
+    -- 5. Create organizations
+    INSERT INTO organizations (name, active, created_at, updated_at, updated_by_id, created_by_id)
+    SELECT name, true, NOW(), NOW(), 1, 1
+    FROM (VALUES ('Acme Corp'), ('Wisbric')) AS o(name)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM organizations WHERE organizations.name = o.name
+    );
+
+    COMMIT;
+{{- end }}

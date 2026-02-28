@@ -1,0 +1,105 @@
+{{/*
+Zammad post-install setup — Job that runs idempotent SQL against Zammad's
+PostgreSQL database to create the TicketOwl service user, API token, groups,
+and organizations. Runs after Zammad is up (hook-weight: 10).
+*/}}
+{{- if and .Values.zammad.enabled .Values.zammad.ticketowlToken }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-zammad-setup
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zammad-setup
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: setup
+          image: bitnami/postgresql:16
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+
+              # ---------------------------------------------------------------
+              # Wait for Zammad's PostgreSQL database to be ready
+              # ---------------------------------------------------------------
+              echo "Waiting for PostgreSQL at $PGHOST:$PGPORT ..."
+              ATTEMPTS=0
+              until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ "$ATTEMPTS" -ge 60 ]; then
+                  echo "ERROR: PostgreSQL not ready after 5 minutes"
+                  exit 1
+                fi
+                echo "  Not ready yet (attempt $ATTEMPTS/60), retrying in 5s..."
+                sleep 5
+              done
+              echo "PostgreSQL is ready."
+
+              # ---------------------------------------------------------------
+              # Wait for Zammad to have completed its own migrations
+              # (check that the 'tokens' table exists)
+              # ---------------------------------------------------------------
+              echo "Waiting for Zammad schema (tokens table) ..."
+              ATTEMPTS=0
+              until psql -c "SELECT 1 FROM tokens LIMIT 0" >/dev/null 2>&1; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ "$ATTEMPTS" -ge 60 ]; then
+                  echo "ERROR: Zammad schema not ready after 5 minutes"
+                  exit 1
+                fi
+                echo "  Schema not ready yet (attempt $ATTEMPTS/60), retrying in 5s..."
+                sleep 5
+              done
+              echo "Zammad schema is ready."
+
+              # ---------------------------------------------------------------
+              # Run the idempotent setup SQL
+              # ---------------------------------------------------------------
+              echo "Running Zammad setup SQL..."
+              psql \
+                --set ticketowl_token="$ZAMMAD_TICKETOWL_TOKEN" \
+                -f /scripts/setup.sql
+
+              echo "Zammad setup complete."
+          env:
+            - name: PGHOST
+              value: {{ .Values.zammad.zammadConfig.postgresql.host | quote }}
+            - name: PGPORT
+              value: {{ .Values.zammad.zammadConfig.postgresql.port | default "5432" | quote }}
+            - name: PGUSER
+              value: {{ .Values.zammad.zammadConfig.postgresql.user | quote }}
+            - name: PGPASSWORD
+              value: {{ .Values.zammad.zammadConfig.postgresql.pass | quote }}
+            - name: PGDATABASE
+              value: {{ .Values.zammad.zammadConfig.postgresql.db | quote }}
+            - name: ZAMMAD_TICKETOWL_TOKEN
+              value: {{ .Values.zammad.ticketowlToken | quote }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ .Release.Name }}-zammad-setup
+{{- end }}

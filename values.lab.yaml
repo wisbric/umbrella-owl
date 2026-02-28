@@ -322,6 +322,7 @@ ticketowl:
     bookowlApiUrl: "http://owl-bookowl-api:8081"
     nightowlUrl: "https://nightowl.devops.lab"
     bookowlUrl: "https://bookowl.devops.lab"
+    zammadUrl: "http://owl-zammad:8080"
 
   secrets:
     dbUrl: ""             # Set via values.lab-secrets.yaml
@@ -332,6 +333,7 @@ ticketowl:
     encryptionKey: ""     # Set via values.lab-secrets.yaml
     nightowlApiKey: ""    # Set via values.lab-secrets.yaml
     bookowlApiKey: ""     # Set via values.lab-secrets.yaml
+    zammadToken: ""       # Set via values.lab-secrets.yaml
 
   ingress:
     enabled: true
@@ -457,6 +459,27 @@ keycloak:
 # -----------------------------------------------------------------------------
 zammad:
   enabled: true
+  # Auto-create admin user on fresh install (no-op if users already exist)
+  autoWizard:
+    enabled: true
+    config: |
+      {
+        "Users": [{
+          "login": "admin@wisbric.local",
+          "firstname": "Admin",
+          "lastname": "Wisbric",
+          "email": "admin@wisbric.local",
+          "password": "OwlAdmin2026!"
+        }],
+        "Settings": [
+          { "name": "product_name", "value": "Zammad (Lab)" },
+          { "name": "timezone_default", "value": "Pacific/Auckland" }
+        ],
+        "Organizations": [
+          { "name": "Acme Corp" },
+          { "name": "Wisbric" }
+        ]
+      }
   # Disable Zammad's internal PostgreSQL and Redis — use shared instances
   zammadConfig:
     postgresql:
