@@ -86,6 +86,9 @@ nightowl:
   config:
     logLevel: debug
     corsAllowedOrigins: "https://nightowl.devops.lab"
+    bookowlUrl: "https://bookowl.devops.lab"
+    ticketowlUrl: "https://ticketowl.devops.lab"
+    bookowlApiUrl: "http://owl-bookowl-api:8081/api/v1"
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
@@ -214,6 +217,10 @@ bookowl:
   nightowl:
     apiUrl: "http://owl-nightowl:80"
     apiKey: ""  # Set via values.lab-secrets.yaml
+    url: "https://nightowl.devops.lab"
+
+  ticketowl:
+    url: "https://ticketowl.devops.lab"
 
   ingress:
     enabled: true
@@ -313,6 +320,8 @@ ticketowl:
     logLevel: debug
     nightowlApiUrl: "http://owl-nightowl:80"
     bookowlApiUrl: "http://owl-bookowl-api:8081"
+    nightowlUrl: "https://nightowl.devops.lab"
+    bookowlUrl: "https://bookowl.devops.lab"
 
   secrets:
     dbUrl: ""             # Set via values.lab-secrets.yaml
