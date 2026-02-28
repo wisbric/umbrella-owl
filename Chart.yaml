@@ -19,13 +19,13 @@ keywords:
 dependencies:
   # -- Owl applications (OCI from GHCR)
   - name: nightowl
-    version: "0.1.6"
+    version: "0.1.7"
     repository: oci://ghcr.io/wisbric/charts
   - name: bookowl
-    version: "0.1.5"
+    version: "0.1.6"
     repository: oci://ghcr.io/wisbric/charts
   - name: ticketowl
-    version: "0.1.7"
+    version: "0.1.8"
     repository: oci://ghcr.io/wisbric/charts
 
   # -- Third-party dependencies (upstream registries)

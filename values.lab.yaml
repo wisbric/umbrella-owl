@@ -29,6 +29,9 @@ registryCredentials:
 # NightOwl
 # -----------------------------------------------------------------------------
 nightowl:
+  seed:
+    enabled: true
+
   replicaCount:
     api: 1
     worker: 1
@@ -135,6 +138,9 @@ nightowl:
 # BookOwl
 # -----------------------------------------------------------------------------
 bookowl:
+  seed:
+    enabled: true
+
   image:
     tag: main
     pullPolicy: Always
@@ -249,6 +255,9 @@ bookowl:
 # TicketOwl
 # -----------------------------------------------------------------------------
 ticketowl:
+  seed:
+    enabled: true
+
   image:
     tag: main
     pullPolicy: Always
