@@ -144,6 +144,11 @@ bookowl:
   seed:
     enabled: true
 
+  nightowl:
+    url: "https://nightowl.devops.lab"
+  ticketowl:
+    url: "https://ticketowl.devops.lab"
+
   image:
     tag: main
     pullPolicy: Always
