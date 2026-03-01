@@ -106,12 +106,45 @@ kubectl exec -n "$NAMESPACE" "$ZAMMAD_POD" -c "$ZAMMAD_CONTAINER" -- rails runne
   eng     = Group.find_by(name: "Engineering") || Group.first
   billing = Group.find_by(name: "Billing") || Group.first
 
+  prio_low    = Ticket::Priority.find_by(name: "1 low")
+  prio_normal = Ticket::Priority.find_by(name: "2 normal")
+  prio_high   = Ticket::Priority.find_by(name: "3 high")
+
+  state_open    = Ticket::State.find_by(name: "open")
+  state_pending = Ticket::State.find_by(name: "pending reminder") || Ticket::State.find_by(name: "pending close") || state_open
+  state_closed  = Ticket::State.find_by(name: "closed")
+
   tickets = [
-    { title: "Login page returns 500 after upgrade",        group: support, priority: Ticket::Priority.find_by(name: "3 high") },
-    { title: "API rate limiting not working",               group: eng,     priority: Ticket::Priority.find_by(name: "2 normal") },
-    { title: "Invoice PDF generation broken",               group: billing, priority: Ticket::Priority.find_by(name: "3 high") },
-    { title: "Dashboard widget not loading for IE users",   group: support, priority: Ticket::Priority.find_by(name: "1 low") },
-    { title: "Database connection pool exhausted under load", group: eng,   priority: Ticket::Priority.find_by(name: "3 high") },
+    { title: "Login page returns 500 after upgrade",
+      group: support, priority: prio_high, state: state_open,
+      body: "After the v2.4.1 upgrade, the /login endpoint returns a 500 Internal Server Error for all users. Stack trace points to a nil pointer in the session middleware. This is blocking all customer logins." },
+    { title: "API rate limiting not working",
+      group: eng, priority: prio_normal, state: state_open,
+      body: "Rate limiting middleware is configured for 100 req/min but load testing shows no throttling even at 500 req/min. Checked nginx config and the X-RateLimit headers are missing from responses." },
+    { title: "Invoice PDF generation broken",
+      group: billing, priority: prio_high, state: state_open,
+      body: "PDF generation for invoices fails with a wkhtmltopdf timeout. Affects all invoices created after 2026-02-15. The HTML template renders correctly in browser but the PDF converter hangs." },
+    { title: "Dashboard widget not loading for IE users",
+      group: support, priority: prio_low, state: state_closed,
+      body: "Legacy IE11 users report the analytics dashboard widget shows a blank white box. Root cause was an unsupported ES2020 optional chaining operator. Fixed by adding the Babel plugin." },
+    { title: "Database connection pool exhausted under load",
+      group: eng, priority: prio_high, state: state_open,
+      body: "During peak hours (09:00-10:00 UTC), the connection pool hits the 50-connection limit and new requests queue for 30+ seconds. pgbouncer logs show long-running transactions from the reporting module holding connections." },
+    { title: "Customer SSO redirects to wrong tenant",
+      group: support, priority: prio_high, state: state_pending,
+      body: "When customers from Acme Corp log in via OIDC, they are occasionally redirected to the wrong tenant dashboard. This appears to be a race condition in the session cookie when multiple tabs are open. Waiting on customer to provide HAR file." },
+    { title: "Webhook delivery retries not respecting backoff",
+      group: eng, priority: prio_normal, state: state_open,
+      body: "Webhook delivery to external endpoints retries immediately on 503 responses instead of using exponential backoff. This causes thundering herd issues on the receiving service. The retry loop in worker/webhook.go ignores the Retry-After header." },
+    { title: "Monthly billing report shows negative amounts",
+      group: billing, priority: prio_normal, state: state_pending,
+      body: "The February 2026 billing report for two customer orgs shows negative line items due to a credit memo that was applied twice. Accounting has flagged this. Pending review of the credit reconciliation logic." },
+    { title: "Search index out of sync after bulk import",
+      group: eng, priority: prio_low, state: state_open,
+      body: "After importing 2,000 tickets via the bulk API, the Elasticsearch index is missing approximately 150 records. A manual reindex fixes the issue. Suspect the async indexing queue drops messages under high throughput." },
+    { title: "Email notification templates contain broken links",
+      group: support, priority: prio_low, state: state_closed,
+      body: "Ticket notification emails contained links pointing to the old domain (support.example.com) instead of the new one (tickets.wisbric.com). Updated the NOTIFICATION_BASE_URL environment variable and redeployed." },
   ]
 
   tickets.each do |t|
@@ -119,8 +152,8 @@ kubectl exec -n "$NAMESPACE" "$ZAMMAD_POD" -c "$ZAMMAD_CONTAINER" -- rails runne
     ticket = Ticket.create!(
       title:         t[:title],
       group:         t[:group],
-      priority:      t[:priority] || Ticket::Priority.find_by(name: "2 normal"),
-      state:         Ticket::State.find_by(name: "open"),
+      priority:      t[:priority] || prio_normal,
+      state:         t[:state] || state_open,
       customer_id:   admin.id,
       updated_by_id: 1,
       created_by_id: 1,
@@ -131,7 +164,7 @@ kubectl exec -n "$NAMESPACE" "$ZAMMAD_POD" -c "$ZAMMAD_CONTAINER" -- rails runne
       sender:        Ticket::Article::Sender.find_by(name: "Agent"),
       from:          "admin@wisbric.local",
       subject:       t[:title],
-      body:          "Sample ticket created by setup script.",
+      body:          t[:body],
       internal:      false,
       updated_by_id: 1,
       created_by_id: 1,
