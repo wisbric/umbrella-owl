@@ -22,7 +22,7 @@ dependencies:
     version: "0.1.9"
     repository: oci://ghcr.io/wisbric/charts
   - name: bookowl
-    version: "0.1.8"
+    version: "0.1.9"
     repository: oci://ghcr.io/wisbric/charts
   - name: ticketowl
     version: "0.1.16"

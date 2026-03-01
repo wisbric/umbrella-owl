@@ -144,6 +144,8 @@ bookowl:
   seed:
     enabled: true
 
+  publicUrl: "https://bookowl.devops.lab"
+
   nightowl:
     url: "https://nightowl.devops.lab"
   ticketowl:
