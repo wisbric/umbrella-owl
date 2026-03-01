@@ -25,7 +25,7 @@ dependencies:
     version: "0.1.8"
     repository: oci://ghcr.io/wisbric/charts
   - name: ticketowl
-    version: "0.1.13"
+    version: "0.1.14"
     repository: oci://ghcr.io/wisbric/charts
 
   # -- Third-party dependencies (upstream registries)
