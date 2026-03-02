@@ -4,10 +4,10 @@ dependencies:
   version: 0.1.9
 - name: bookowl
   repository: oci://ghcr.io/wisbric/charts
-  version: 0.1.8
+  version: 0.1.11
 - name: ticketowl
   repository: oci://ghcr.io/wisbric/charts
-  version: 0.1.13
+  version: 0.1.17
 - name: postgresql
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 16.4.1
@@ -23,5 +23,5 @@ dependencies:
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 14.8.5
-digest: sha256:dfd3b2377a187e916fbe3a4c6ec6ce2af8f5c1a308ed8d54291b1adc1a4640d9
-generated: "2026-03-01T19:11:37.229191386+13:00"
+digest: sha256:bd3defec4dd68cbc3e4f90c7a96b891b012ac2c2db8fa1f0eb1c95b2dd7ef11f
+generated: "2026-03-02T23:47:54.011166132+13:00"
