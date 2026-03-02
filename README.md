@@ -67,7 +67,7 @@ This chart uses a single `values.yaml` per environment. Each subchart's configur
 # values.yaml structure
 nightowl:        # All nightowl chart values
   image:
-    tag: "v0.1.0"
+    tag: "main"
   replicaCount:
     api: 2
     worker: 1
@@ -77,14 +77,14 @@ nightowl:        # All nightowl chart values
 
 bookowl:          # All bookowl chart values
   image:
-    tag: "v0.1.0"
+    tag: "main"
   secrets:
     databaseUrl: ""
     redisUrl: ""
 
 ticketowl:        # All ticketowl chart values
   image:
-    tag: "v0.1.0"
+    tag: "main"
   secrets:
     dbUrl: ""
     redisUrl: ""

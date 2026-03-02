@@ -68,12 +68,22 @@ All subcharts (owl apps and third-party dependencies) are pulled from Helm regis
 umbrella-owl/
 ├── Chart.yaml                    # Umbrella chart metadata + dependency list
 ├── Chart.lock                    # Pinned dependency versions (generated)
+├── Makefile                      # deploy-lab target for helm upgrade
 ├── values.yaml                   # Base/default values (all subcharts namespaced)
 ├── values-dev.yaml               # Dev/staging overrides
 ├── values-production.yaml        # Production overrides
+├── values.lab.yaml               # Lab environment overrides
+├── values.lab-secrets.yaml       # Lab secrets (not committed — gitignored)
 ├── templates/
 │   ├── _helpers.tpl              # Shared template helpers
 │   └── NOTES.txt                 # Post-install instructions
+├── deploy/
+│   ├── apply-secrets.sh          # Helper to apply secrets to cluster
+│   └── setup-zammad.sh           # Zammad initial setup script
+├── keycloak/
+│   └── owls-realm.json           # Keycloak realm export for all owl apps
+├── docs/
+│   └── integration.md            # Cross-service integration notes
 ├── argocd/
 │   ├── dev.yaml                  # ArgoCD Application for dev/staging
 │   └── production.yaml           # ArgoCD Application for production
@@ -93,19 +103,19 @@ apiVersion: v2
 name: umbrella-owl
 description: Umbrella Helm chart for the Wisbric owl ecosystem
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.1.4
+appVersion: "0.1.4"
 
 dependencies:
   # Owl applications — OCI from GHCR
   - name: nightowl
-    version: "0.1.0"
+    version: "0.1.9"
     repository: oci://ghcr.io/wisbric/charts
   - name: bookowl
-    version: "0.1.0"
+    version: "0.1.12"
     repository: oci://ghcr.io/wisbric/charts
   - name: ticketowl
-    version: "0.1.0"
+    version: "0.1.17"
     repository: oci://ghcr.io/wisbric/charts
 
   # Third-party — upstream Helm registries
@@ -118,7 +128,7 @@ dependencies:
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: redis.enabled
   - name: keycloak
-    version: "24.4.5"
+    version: "25.2.0"
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: keycloak.enabled
   - name: zammad
@@ -130,8 +140,6 @@ dependencies:
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: minio.enabled
 ```
-
-> **Note:** Version numbers above are placeholders. Pin to the latest stable release at time of creation by checking each registry.
 
 ## Values Namespacing
 
@@ -237,36 +245,15 @@ Chart locations per repo:
 2. `helm package .` — package the umbrella chart
 3. `helm push umbrella-owl-*.tgz oci://ghcr.io/wisbric/charts` — push to GHCR
 
-## Prioritised Task List
+## Lab Deployment
 
-### Phase 1 — Scaffold the Umbrella Chart
-1. Create `Chart.yaml` with all dependencies (owl apps + third-party)
-2. Create base `values.yaml` with namespaced defaults for every subchart
-3. Create `templates/NOTES.txt` with post-install summary and access instructions
-4. Create `templates/_helpers.tpl` with shared helpers
-5. Create `.helmignore`
+The lab environment uses `values.lab.yaml` and `values.lab-secrets.yaml`:
 
-### Phase 2 — Environment Values Files
-6. Create `values-dev.yaml` — dev/staging overrides (lower resources, debug logging, dev image tags)
-7. Create `values-production.yaml` — production overrides (real secrets placeholders, production resources, ingress with TLS)
+```bash
+make deploy-lab    # helm dep update && helm upgrade -f values.lab.yaml -f values.lab-secrets.yaml
+```
 
-### Phase 3 — CI Pipeline for This Repo
-8. Create `.github/workflows/lint.yml` — helm lint + template render on PRs
-9. Create `.github/workflows/release.yml` — package + push umbrella chart on version tags
-
-### Phase 4 — Chart Publishing Stubs for Owl Repos
-10. Add `helm-release` job stub to `nightowl/.github/workflows/release.yml`
-11. Add `helm-release` job stub to `bookowl/.github/workflows/release.yml`
-12. Add `helm-release` job stub to `ticketowl/.github/workflows/ci.yml` (ticketowl has no separate release workflow yet)
-
-### Phase 5 — ArgoCD Integration
-13. Create `argocd/` directory with example Application manifests (one per environment)
-14. Document ArgoCD setup in README.md
-
-### Phase 6 — Validation & Docs
-15. Run `helm dep build` and `helm template` to validate everything resolves
-16. Verify cross-service wiring is correct in values files
-17. Final README.md review
+Lab images use `tag: main` with `pullPolicy: Always`. After CI builds complete, restart deployments to pick up new images.
 
 ## Conventions
 
