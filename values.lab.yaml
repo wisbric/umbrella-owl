@@ -189,10 +189,12 @@ bookowl:
       limits:
         cpu: 250m
         memory: 128Mi
-    wsUrl: "wss://collab.bookowl.devops.lab"
+    wsUrl: "wss://bookowl.devops.lab/collab"
     ingress:
       enabled: true
-      host: collab.bookowl.devops.lab
+      host: bookowl.devops.lab
+      path: /collab
+      tlsSecretName: bookowl-tls
 
   # Mount combined CA bundle so OIDC discovery trusts HTTPS Keycloak
   extraVolumes:
