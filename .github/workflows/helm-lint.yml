@@ -17,15 +17,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout owlstack (for local chart dependency)
-        uses: actions/checkout@v4
-        with:
-          repository: wisbric/owlstack
-          path: owlstack-checkout
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Symlink owlstack to expected relative path
-        run: ln -s "$GITHUB_WORKSPACE/owlstack-checkout" ../owlstack
+      # Create a stub owlstack chart to satisfy the file:// dependency.
+      # The real chart lives in wisbric/owlstack (cross-repo, not accessible
+      # with the default GITHUB_TOKEN). Only Chart.yaml is needed for dep build.
+      - name: Create owlstack chart stub
+        run: |
+          mkdir -p ../owlstack/deploy/helm/owlstack/templates
+          cat > ../owlstack/deploy/helm/owlstack/Chart.yaml << 'EOF'
+          apiVersion: v2
+          name: owlstack
+          version: "0.3.0"
+          description: Stub chart for CI dependency resolution
+          EOF
+          touch ../owlstack/deploy/helm/owlstack/values.yaml
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
