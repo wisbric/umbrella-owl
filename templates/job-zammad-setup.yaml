@@ -74,9 +74,18 @@ spec:
                 -f /scripts/setup.sql
 
               # ---------------------------------------------------------------
-              # Mark Zammad setup as complete (skip Getting Started wizard)
+              # Configure Zammad hostname, protocol, and mark setup complete
+              # (skips Getting Started wizard on fresh installs)
               # ---------------------------------------------------------------
-              echo "Marking Zammad setup as complete..."
+              echo "Configuring Zammad system settings..."
+              psql -c "UPDATE settings SET state_current = '---
+              value: $ZAMMAD_FQDN
+              ' WHERE name = 'fqdn';"
+
+              psql -c "UPDATE settings SET state_current = '---
+              value: $ZAMMAD_HTTP_TYPE
+              ' WHERE name = 'http_type';"
+
               psql -c "UPDATE settings SET state_current = '--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess
               value: true
               ' WHERE name = 'system_init_done' AND state_current NOT LIKE '%value: true%';"
@@ -95,6 +104,10 @@ spec:
               value: {{ .Values.zammad.zammadConfig.postgresql.db | quote }}
             - name: ZAMMAD_OWLSTACK_TOKEN
               value: {{ .Values.zammad.owlstackToken | quote }}
+            - name: ZAMMAD_FQDN
+              value: {{ (index .Values.zammad.ingress.hosts 0).host | default "localhost" | quote }}
+            - name: ZAMMAD_HTTP_TYPE
+              value: {{ if .Values.zammad.ingress.tls }}"https"{{ else }}"http"{{ end }}
           volumeMounts:
             - name: scripts
               mountPath: /scripts
