@@ -1,0 +1,77 @@
+{
+  "ifResourceExists": "SKIP",
+  "clients": [
+    {
+      "clientId": "nightowl",
+      "name": "NightOwl (Owlstack)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "NIGHTOWL_OIDC_SECRET_PLACEHOLDER",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://nightowl.devops.lab/*",
+        "http://localhost:3000/*",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "https://nightowl.devops.lab",
+        "http://localhost:3000",
+        "http://localhost:5173"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "groups"
+      ]
+    },
+    {
+      "clientId": "keep",
+      "name": "Keep (AIOps Alerts)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "KEEP_OIDC_SECRET_PLACEHOLDER",
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "https://keep.devops.lab/*",
+        "https://keep.devops.lab/oauth2/callback"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "groups"
+      ]
+    },
+    {
+      "clientId": "outline",
+      "name": "Outline (Wiki)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "OUTLINE_OIDC_SECRET_PLACEHOLDER",
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "https://outline.devops.lab/*",
+        "https://outline.devops.lab/auth/oidc.callback"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "groups",
+        "offline_access"
+      ]
+    }
+  ]
+}
