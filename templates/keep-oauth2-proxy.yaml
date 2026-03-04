@@ -42,6 +42,7 @@ spec:
             - --cookie-secure=true
             - --cookie-name=_keep_oauth2
             - --skip-provider-button=true
+            - --oidc-audience-claim=azp
             {{- if .Values.keep.oauth2Proxy.skipTlsVerify }}
             - --ssl-insecure-skip-verify=true
             {{- end }}

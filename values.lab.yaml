@@ -420,9 +420,9 @@ outline:
     - name: OIDC_AUTH_URI
       value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/auth"
     - name: OIDC_TOKEN_URI
-      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/token"
+      value: "http://owl-keycloak:80/realms/owls/protocol/openid-connect/token"
     - name: OIDC_USERINFO_URI
-      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/userinfo"
+      value: "http://owl-keycloak:80/realms/owls/protocol/openid-connect/userinfo"
     - name: OIDC_LOGOUT_URI
       value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/logout"
     - name: OIDC_USERNAME_CLAIM
@@ -442,9 +442,7 @@ outline:
       value: private
     - name: AWS_REGION
       value: garage
-    # Trust self-signed CA for Keycloak OIDC discovery
-    - name: NODE_EXTRA_CA_CERTS
-      value: /etc/ssl/certs/ca-certificates.crt
+    # NODE_EXTRA_CA_CERTS not needed — OIDC token/userinfo use internal HTTP
   # Inject secrets from umbrella-managed K8s Secret
   environmentFrom:
     - secretRef:
@@ -465,16 +463,8 @@ outline:
       - secretName: outline-tls
         hosts:
           - outline.devops.lab
-  # Mount CA bundle for Keycloak OIDC discovery (self-signed certs)
-  extraVolumes:
-    - name: ca-bundle
-      configMap:
-        name: combined-ca-bundle
-  extraVolumeMounts:
-    - name: ca-bundle
-      mountPath: /etc/ssl/certs/ca-certificates.crt
-      subPath: ca-certificates.crt
-      readOnly: true
+  # Note: extraVolumes/extraVolumeMounts not supported by lrstanley chart.
+  # OIDC token/userinfo calls use internal HTTP service to avoid TLS issues.
 
 # -----------------------------------------------------------------------------
 # Garage — S3-compatible storage for Outline uploads
