@@ -152,7 +152,7 @@ postgresql:
     database: nightowl
   primary:
     persistence:
-      size: 10Gi
+      size: 5Gi
       # Uses default StorageClass (Longhorn)
     resources:
       requests:
@@ -274,6 +274,17 @@ zammad:
     image:
       repository: bitnamilegacy/elasticsearch
       tag: 8.12.0-debian-11-r1
+    master:
+      masterOnly: false
+      replicaCount: 1
+      persistence:
+        size: 5Gi
+    data:
+      replicaCount: 0
+    coordinating:
+      replicaCount: 0
+    ingest:
+      replicaCount: 0
     sysctlImage:
       registry: docker.io
       repository: bitnamilegacy/os-shell
@@ -487,7 +498,7 @@ garage:
       size: 1Gi
     data:
       storageClass: longhorn
-      size: 10Gi
+      size: 5Gi
 
 # -----------------------------------------------------------------------------
 # Backup — Daily PostgreSQL backups

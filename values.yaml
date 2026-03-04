@@ -43,7 +43,7 @@ owlstack:
       repository: ghcr.io/wisbric/owlstack-web
       pullPolicy: IfNotPresent
       tag: ""
-    replicas: 2
+    replicas: 1
     service:
       type: ClusterIP
       port: 80
