@@ -3,10 +3,10 @@
 # setup-zammad.sh — One-time Zammad provisioning for running lab environment
 # =============================================================================
 # Creates admin user, service user, API token, sample data in Zammad,
-# then updates TicketOwl's zammad_config in the database.
+# then updates Owlstack's zammad_config in the database.
 #
 # NOTE: Zammad auto-generates API token values — you cannot set a custom token.
-# This script reads back the generated token and writes it to TicketOwl's DB.
+# This script reads back the generated token and writes it to Owlstack's DB.
 #
 # Usage:
 #   ./deploy/setup-zammad.sh
@@ -23,8 +23,8 @@ ZAMMAD_POD="owl-zammad-0"
 ZAMMAD_CONTAINER="zammad-railsserver"
 PG_POD="owl-postgresql-0"
 
-# TicketOwl DB password (from values.lab-secrets.yaml)
-TICKETOWL_DB_PASS="${TICKETOWL_DB_PASS:-M7ov36EIDVFFFE5xDqZSXZH7Wn0cH8O5}"
+# Owlstack DB password (from values.lab-secrets.yaml)
+NIGHTOWL_DB_PASS="${NIGHTOWL_DB_PASS:-changeme}"
 
 # Helper: run a rails runner script via stdin to avoid URI-too-large errors.
 run_rails() {
@@ -60,14 +60,14 @@ run_rails <<'RUBY'
     puts "Admin user already exists: #{admin.login}"
   end
 
-  svc = User.find_by(login: "ticketowl-service")
+  svc = User.find_by(login: "owlstack-service")
   unless svc
     svc = User.create!(
-      login:     "ticketowl-service",
-      firstname: "TicketOwl",
+      login:     "owlstack-service",
+      firstname: "Owlstack",
       lastname:  "Service",
-      email:     "ticketowl-service@wisbric.local",
-      password:  "TicketOwlService2026!",
+      email:     "owlstack-service@wisbric.local",
+      password:  "OwlstackService2026!",
       active:    true,
       verified:  true,
       roles:     Role.where(name: %w[Admin Agent]),
@@ -79,7 +79,7 @@ run_rails <<'RUBY'
     puts "Service user already exists: #{svc.login}"
   end
 
-  token_name = "TicketOwl Integration"
+  token_name = "Owlstack Integration"
   t = Token.find_by(user_id: svc.id, name: token_name)
   unless t
     t = Token.create!(
@@ -100,18 +100,18 @@ RUBY
 echo ""
 echo "=== Step 2: Read back the generated API token ==="
 
-TICKETOWL_TOKEN=$(run_rails_extract "ZAMMAD_TOKEN=" <<'RUBY'
-  svc = User.find_by(login: "ticketowl-service")
-  t = Token.find_by(user_id: svc.id, name: "TicketOwl Integration")
+OWLSTACK_TOKEN=$(run_rails_extract "ZAMMAD_TOKEN=" <<'RUBY'
+  svc = User.find_by(login: "owlstack-service")
+  t = Token.find_by(user_id: svc.id, name: "Owlstack Integration")
   puts "ZAMMAD_TOKEN=#{t.token}"
 RUBY
 )
 
-if [[ -z "$TICKETOWL_TOKEN" ]]; then
+if [[ -z "$OWLSTACK_TOKEN" ]]; then
   echo "ERROR: Could not read API token from Zammad."
   exit 1
 fi
-echo "API token: ${TICKETOWL_TOKEN:0:12}..."
+echo "API token: ${OWLSTACK_TOKEN:0:12}..."
 
 echo ""
 echo "=== Step 3: Create groups and organizations ==="
@@ -241,12 +241,12 @@ run_rails <<'RUBY'
 RUBY
 
 echo ""
-echo "=== Step 6: Update TicketOwl zammad_config in database ==="
+echo "=== Step 6: Update Owlstack zammad_config in database ==="
 
-kubectl exec -n "$NAMESPACE" "$PG_POD" -- env PGPASSWORD="$TICKETOWL_DB_PASS" psql -U ticketowl -d ticketowl -c "
+kubectl exec -n "$NAMESPACE" "$PG_POD" -- env PGPASSWORD="$NIGHTOWL_DB_PASS" psql -U nightowl -d nightowl -c "
   UPDATE tenant_acme.zammad_config
   SET url = 'http://owl-zammad:8080',
-      api_token = '$TICKETOWL_TOKEN',
+      api_token = '$OWLSTACK_TOKEN',
       updated_at = NOW()
 "
 
@@ -254,7 +254,7 @@ echo ""
 echo "=== Done! ==="
 echo "Zammad admin:  admin@wisbric.local / OwlAdmin2026!"
 echo "Zammad URL:    https://zammad.devops.lab"
-echo "API token:     ${TICKETOWL_TOKEN:0:12}..."
+echo "API token:     ${OWLSTACK_TOKEN:0:12}..."
 echo ""
-echo "TicketOwl should now be able to connect to Zammad."
-echo "Verify at: https://ticketowl.devops.lab/admin/zammad"
+echo "Owlstack should now be able to connect to Zammad."
+echo "Verify at: https://nightowl.devops.lab/admin"

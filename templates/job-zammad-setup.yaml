@@ -1,9 +1,9 @@
 {{/*
 Zammad post-install setup — Job that runs idempotent SQL against Zammad's
-PostgreSQL database to create the TicketOwl service user, API token, groups,
+PostgreSQL database to create the Owlstack service user, API token, groups,
 and organizations. Runs after Zammad is up (hook-weight: 10).
 */}}
-{{- if and .Values.zammad.enabled .Values.zammad.ticketowlToken }}
+{{- if and .Values.zammad.enabled .Values.zammad.owlstackToken }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -26,7 +26,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: setup
-          image: bitnami/postgresql:16
+          image: postgres:16-alpine
           command: ["/bin/bash", "-c"]
           args:
             - |
@@ -70,7 +70,7 @@ spec:
               # ---------------------------------------------------------------
               echo "Running Zammad setup SQL..."
               psql \
-                --set ticketowl_token="$ZAMMAD_TICKETOWL_TOKEN" \
+                --set owlstack_token="$ZAMMAD_OWLSTACK_TOKEN" \
                 -f /scripts/setup.sql
 
               echo "Zammad setup complete."
@@ -85,8 +85,8 @@ spec:
               value: {{ .Values.zammad.zammadConfig.postgresql.pass | quote }}
             - name: PGDATABASE
               value: {{ .Values.zammad.zammadConfig.postgresql.db | quote }}
-            - name: ZAMMAD_TICKETOWL_TOKEN
-              value: {{ .Values.zammad.ticketowlToken | quote }}
+            - name: ZAMMAD_OWLSTACK_TOKEN
+              value: {{ .Values.zammad.owlstackToken | quote }}
           volumeMounts:
             - name: scripts
               mountPath: /scripts

@@ -1,7 +1,9 @@
 {{/*
-Keycloak realm bootstrap — post-install hook
-Creates a ConfigMap with the owls realm JSON (OIDC client secret templated)
-and a Job that imports it into Keycloak via the admin REST API.
+Keycloak realm bootstrap — post-install/post-upgrade hook
+Creates a ConfigMap with:
+  1) full realm JSON for first-time creation
+  2) partial import JSON for idempotent client/client-scope updates
+The Job imports/updates the realm via Keycloak admin REST API.
 */}}
 {{- if and .Values.keycloak.enabled (default true .Values.keycloak.realmImport.enabled) }}
 ---
@@ -12,14 +14,22 @@ metadata:
   labels:
     {{- include "umbrella-owl.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "-5"
     "helm.sh/hook-delete-policy": before-hook-creation
 data:
   owls-realm.json: |-
     {{- $realm := .Files.Get "keycloak/owls-realm.json" }}
-    {{- $realm = $realm | replace "NIGHTOWL_OIDC_SECRET_PLACEHOLDER" (.Values.nightowl.secrets.oidcClientSecret | default "changeme") }}
+    {{- $realm = $realm | replace "NIGHTOWL_OIDC_SECRET_PLACEHOLDER" (.Values.owlstack.secrets.oidcClientSecret | default "changeme") }}
+    {{- $realm = $realm | replace "KEEP_OIDC_SECRET_PLACEHOLDER" (.Values.keep.oidcClientSecret | default "changeme") }}
+    {{- $realm = $realm | replace "OUTLINE_OIDC_SECRET_PLACEHOLDER" (.Values.outline.oidcClientSecret | default "changeme") }}
     {{ $realm | nindent 4 }}
+  owls-realm-partial.json: |-
+    {{- $partial := .Files.Get "keycloak/owls-realm-partial.json" }}
+    {{- $partial = $partial | replace "NIGHTOWL_OIDC_SECRET_PLACEHOLDER" (.Values.owlstack.secrets.oidcClientSecret | default "changeme") }}
+    {{- $partial = $partial | replace "KEEP_OIDC_SECRET_PLACEHOLDER" (.Values.keep.oidcClientSecret | default "changeme") }}
+    {{- $partial = $partial | replace "OUTLINE_OIDC_SECRET_PLACEHOLDER" (.Values.outline.oidcClientSecret | default "changeme") }}
+    {{ $partial | nindent 4 }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -28,7 +38,7 @@ metadata:
   labels:
     {{- include "umbrella-owl.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
@@ -95,12 +105,28 @@ spec:
                 -H "Authorization: Bearer $TOKEN" || true)
 
               if [ "$REALM_STATUS" = "200" ]; then
-                echo "Realm 'owls' already exists — skipping import."
+                echo "Realm 'owls' already exists — applying partial import updates..."
+                IMPORT_STATUS=$(curl -sf -o /tmp/response.txt -w "%{http_code}" \
+                  -X POST "$KEYCLOAK_URL/admin/realms/owls/partialImport" \
+                  -H "Authorization: Bearer $TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d @/realm/owls-realm-partial.json)
+
+                case "$IMPORT_STATUS" in
+                  200|201|204)
+                    echo "Partial import applied successfully."
+                    ;;
+                  *)
+                    echo "ERROR: Partial import failed (HTTP $IMPORT_STATUS)"
+                    cat /tmp/response.txt 2>/dev/null || true
+                    exit 1
+                    ;;
+                esac
                 exit 0
               fi
 
               # ---------------------------------------------------------------
-              # Import realm
+              # First-time realm import
               # ---------------------------------------------------------------
               echo "Importing realm 'owls'..."
               IMPORT_STATUS=$(curl -sf -o /tmp/response.txt -w "%{http_code}" \

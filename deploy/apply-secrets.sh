@@ -3,7 +3,8 @@
 # apply-secrets.sh — Generate lab secrets and cert-manager resources
 # =============================================================================
 # Usage:
-#   ./deploy/apply-secrets.sh [--namespace owl] [--dry-run]
+#   ./deploy/apply-secrets.sh [namespace] [--dry-run]
+#   # example: ./deploy/apply-secrets.sh owl --dry-run
 #
 # This script:
 #   1. Generates random passwords for all services
@@ -42,25 +43,34 @@ echo "==> Generating random passwords..."
 # Database passwords (used in both init script and connection URLs)
 PG_SUPERUSER_PW=$(rand_password)
 NIGHTOWL_DB_PW=$(rand_password)
-BOOKOWL_DB_PW=$(rand_password)
-TICKETOWL_DB_PW=$(rand_password)
 KEYCLOAK_DB_PW=$(rand_password)
+ZAMMAD_DB_PW=$(rand_password)
+KEEP_DB_PW=$(rand_password)
+OUTLINE_DB_PW=$(rand_password)
 
 # Application secrets
-NIGHTOWL_SESSION_SECRET=$(rand_hex 32)
-NIGHTOWL_OIDC_SECRET=$(rand_password)
-BOOKOWL_SECRET_KEY=$(rand_hex 32)
-BOOKOWL_NIGHTOWL_API_KEY="bw_$(rand_hex 20)"
-TICKETOWL_ENCRYPTION_KEY=$(rand_hex 32)
-TICKETOWL_NIGHTOWL_API_KEY="to_$(rand_hex 20)"
-TICKETOWL_BOOKOWL_API_KEY="to_$(rand_hex 20)"
+OWLSTACK_SESSION_SECRET=$(rand_hex 32)
+OWLSTACK_OIDC_SECRET=$(rand_password)
+OWLSTACK_ENCRYPTION_KEY=$(rand_hex 32)
+
+# Redis
+REDIS_PW=$(rand_password)
 
 # Keycloak admin
 KEYCLOAK_ADMIN_PW=$(rand_password)
 
-# MinIO
-MINIO_ROOT_USER="minioadmin"
-MINIO_ROOT_PW=$(rand_password)
+# Zammad token for Owlstack integration
+ZAMMAD_OWLSTACK_TOKEN=$(rand_hex 32)
+
+# Keep secrets
+KEEP_NEXTAUTH_SECRET=$(rand_hex 32)
+KEEP_OIDC_SECRET=$(rand_password)
+KEEP_OAUTH2_PROXY_COOKIE_SECRET=$(rand_hex 16)
+
+# Outline secrets
+OUTLINE_SECRET_KEY=$(rand_hex 32)
+OUTLINE_UTILS_SECRET=$(rand_hex 32)
+OUTLINE_OIDC_SECRET=$(rand_password)
 
 # ---------------------------------------------------------------------------
 # Step 1: Create namespace (if not exists)
@@ -93,33 +103,16 @@ registryCredentials:
   password: "${GHCR_PAT}"
 
 # -----------------------------------------------------------------------------
-# NightOwl secrets
+# Owlstack secrets
 # -----------------------------------------------------------------------------
-nightowl:
+owlstack:
   secrets:
     databaseUrl: "postgres://nightowl:${NIGHTOWL_DB_PW}@owl-postgresql:5432/nightowl?sslmode=disable"
-    oidcClientSecret: "${NIGHTOWL_OIDC_SECRET}"
-    sessionSecret: "${NIGHTOWL_SESSION_SECRET}"
-
-# -----------------------------------------------------------------------------
-# BookOwl secrets
-# -----------------------------------------------------------------------------
-bookowl:
-  secretKey: "${BOOKOWL_SECRET_KEY}"
-  database:
-    url: "postgres://bookowl:${BOOKOWL_DB_PW}@owl-postgresql:5432/bookowl?sslmode=disable"
-  nightowl:
-    apiKey: "${BOOKOWL_NIGHTOWL_API_KEY}"
-
-# -----------------------------------------------------------------------------
-# TicketOwl secrets
-# -----------------------------------------------------------------------------
-ticketowl:
-  secrets:
-    dbUrl: "postgres://ticketowl:${TICKETOWL_DB_PW}@owl-postgresql:5432/ticketowl?sslmode=disable"
-    encryptionKey: "${TICKETOWL_ENCRYPTION_KEY}"
-    nightowlApiKey: "${TICKETOWL_NIGHTOWL_API_KEY}"
-    bookowlApiKey: "${TICKETOWL_BOOKOWL_API_KEY}"
+    redisUrl: "redis://:${REDIS_PW}@owl-redis-master:6379/0"
+    oidcClientSecret: "${OWLSTACK_OIDC_SECRET}"
+    sessionSecret: "${OWLSTACK_SESSION_SECRET}"
+    encryptionKey: "${OWLSTACK_ENCRYPTION_KEY}"
+    zammadToken: "${ZAMMAD_OWLSTACK_TOKEN}"
 
 # -----------------------------------------------------------------------------
 # PostgreSQL
@@ -132,31 +125,43 @@ postgresql:
       scripts:
         create-databases.sql: |
           -- Create databases
-          CREATE DATABASE bookowl;
-          CREATE DATABASE ticketowl;
           CREATE DATABASE keycloak;
+          CREATE DATABASE zammad;
+          CREATE DATABASE keep;
+          CREATE DATABASE outline;
 
           -- Create users with generated passwords
           CREATE USER nightowl WITH PASSWORD '${NIGHTOWL_DB_PW}';
-          CREATE USER bookowl WITH PASSWORD '${BOOKOWL_DB_PW}';
-          CREATE USER ticketowl WITH PASSWORD '${TICKETOWL_DB_PW}';
           CREATE USER keycloak WITH PASSWORD '${KEYCLOAK_DB_PW}';
+          CREATE USER zammad WITH PASSWORD '${ZAMMAD_DB_PW}';
+          CREATE USER keep WITH PASSWORD '${KEEP_DB_PW}';
+          CREATE USER outline WITH PASSWORD '${OUTLINE_DB_PW}';
 
           -- Grant privileges
           GRANT ALL PRIVILEGES ON DATABASE nightowl TO nightowl;
-          GRANT ALL PRIVILEGES ON DATABASE bookowl TO bookowl;
-          GRANT ALL PRIVILEGES ON DATABASE ticketowl TO ticketowl;
           GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
+          GRANT ALL PRIVILEGES ON DATABASE zammad TO zammad;
+          GRANT ALL PRIVILEGES ON DATABASE keep TO keep;
+          GRANT ALL PRIVILEGES ON DATABASE outline TO outline;
 
           -- Grant schema permissions (required for PG 15+)
           \\connect nightowl
           GRANT ALL ON SCHEMA public TO nightowl;
-          \\connect bookowl
-          GRANT ALL ON SCHEMA public TO bookowl;
-          \\connect ticketowl
-          GRANT ALL ON SCHEMA public TO ticketowl;
           \\connect keycloak
           GRANT ALL ON SCHEMA public TO keycloak;
+          \\connect zammad
+          GRANT ALL ON SCHEMA public TO zammad;
+          \\connect keep
+          GRANT ALL ON SCHEMA public TO keep;
+          \\connect outline
+          GRANT ALL ON SCHEMA public TO outline;
+
+# -----------------------------------------------------------------------------
+# Redis
+# -----------------------------------------------------------------------------
+redis:
+  auth:
+    password: "${REDIS_PW}"
 
 # -----------------------------------------------------------------------------
 # Keycloak
@@ -168,12 +173,41 @@ keycloak:
     password: "${KEYCLOAK_DB_PW}"
 
 # -----------------------------------------------------------------------------
-# MinIO
+# Zammad
 # -----------------------------------------------------------------------------
-minio:
-  auth:
-    rootUser: "${MINIO_ROOT_USER}"
-    rootPassword: "${MINIO_ROOT_PW}"
+zammad:
+  owlstackToken: "${ZAMMAD_OWLSTACK_TOKEN}"
+  zammadConfig:
+    postgresql:
+      pass: "${ZAMMAD_DB_PW}"
+    redis:
+      pass: "${REDIS_PW}"
+
+# -----------------------------------------------------------------------------
+# Keep
+# -----------------------------------------------------------------------------
+keep:
+  oidcClientSecret: "${KEEP_OIDC_SECRET}"
+  secrets:
+    databaseConnectionString: "postgresql+psycopg2://keep:${KEEP_DB_PW}@owl-postgresql:5432/keep"
+    nextauthSecret: "${KEEP_NEXTAUTH_SECRET}"
+  oauth2Proxy:
+    cookieSecret: "${KEEP_OAUTH2_PROXY_COOKIE_SECRET}"
+
+# -----------------------------------------------------------------------------
+# Outline
+# -----------------------------------------------------------------------------
+outline:
+  oidcClientSecret: "${OUTLINE_OIDC_SECRET}"
+  secrets:
+    secretKey: "${OUTLINE_SECRET_KEY}"
+    utilsSecret: "${OUTLINE_UTILS_SECRET}"
+    databaseUrl: "postgres://outline:${OUTLINE_DB_PW}@owl-postgresql:5432/outline?sslmode=disable"
+    redisUrl: "redis://:${REDIS_PW}@owl-redis-master:6379/3"
+    oidcClientSecret: "${OUTLINE_OIDC_SECRET}"
+    # Fill these after creating a Garage key (see NOTES/docs):
+    awsAccessKeyId: ""
+    awsSecretAccessKey: ""
 SECRETS_EOF
 
 echo "    Written to $SECRETS_FILE"
@@ -195,33 +229,45 @@ PG_SUPERUSER_PASSWORD=${PG_SUPERUSER_PW}
 
 # Database user passwords
 NIGHTOWL_DB_PASSWORD=${NIGHTOWL_DB_PW}
-BOOKOWL_DB_PASSWORD=${BOOKOWL_DB_PW}
-TICKETOWL_DB_PASSWORD=${TICKETOWL_DB_PW}
 KEYCLOAK_DB_PASSWORD=${KEYCLOAK_DB_PW}
+ZAMMAD_DB_PASSWORD=${ZAMMAD_DB_PW}
 
 # Application secrets
-NIGHTOWL_SESSION_SECRET=${NIGHTOWL_SESSION_SECRET}
-NIGHTOWL_OIDC_CLIENT_SECRET=${NIGHTOWL_OIDC_SECRET}
-BOOKOWL_SECRET_KEY=${BOOKOWL_SECRET_KEY}
-BOOKOWL_NIGHTOWL_API_KEY=${BOOKOWL_NIGHTOWL_API_KEY}
-TICKETOWL_ENCRYPTION_KEY=${TICKETOWL_ENCRYPTION_KEY}
-TICKETOWL_NIGHTOWL_API_KEY=${TICKETOWL_NIGHTOWL_API_KEY}
-TICKETOWL_BOOKOWL_API_KEY=${TICKETOWL_BOOKOWL_API_KEY}
+OWLSTACK_SESSION_SECRET=${OWLSTACK_SESSION_SECRET}
+OWLSTACK_OIDC_CLIENT_SECRET=${OWLSTACK_OIDC_SECRET}
+OWLSTACK_ENCRYPTION_KEY=${OWLSTACK_ENCRYPTION_KEY}
+
+# Redis
+REDIS_PASSWORD=${REDIS_PW}
 
 # Keycloak admin
 KEYCLOAK_ADMIN_USER=admin
 KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PW}
 
-# MinIO
-MINIO_ROOT_USER=${MINIO_ROOT_USER}
-MINIO_ROOT_PASSWORD=${MINIO_ROOT_PW}
+# Zammad
+ZAMMAD_OWLSTACK_TOKEN=${ZAMMAD_OWLSTACK_TOKEN}
+ZAMMAD_DB_PASSWORD=${ZAMMAD_DB_PW}
+
+# Keep
+KEEP_DB_PASSWORD=${KEEP_DB_PW}
+KEEP_NEXTAUTH_SECRET=${KEEP_NEXTAUTH_SECRET}
+KEEP_OIDC_CLIENT_SECRET=${KEEP_OIDC_SECRET}
+KEEP_OAUTH2_PROXY_COOKIE_SECRET=${KEEP_OAUTH2_PROXY_COOKIE_SECRET}
+
+# Outline
+OUTLINE_DB_PASSWORD=${OUTLINE_DB_PW}
+OUTLINE_SECRET_KEY=${OUTLINE_SECRET_KEY}
+OUTLINE_UTILS_SECRET=${OUTLINE_UTILS_SECRET}
+OUTLINE_OIDC_CLIENT_SECRET=${OUTLINE_OIDC_SECRET}
+OUTLINE_AWS_ACCESS_KEY_ID=
+OUTLINE_AWS_SECRET_ACCESS_KEY=
 
 # URLs
 NIGHTOWL_URL=https://nightowl.devops.lab
-BOOKOWL_URL=https://bookowl.devops.lab
-TICKETOWL_URL=https://ticketowl.devops.lab
 KEYCLOAK_URL=https://keycloak.devops.lab
 ZAMMAD_URL=https://zammad.devops.lab
+KEEP_URL=https://keep.devops.lab
+OUTLINE_URL=https://outline.devops.lab
 CREDS_EOF
 chmod 600 "$CREDS_FILE"
 echo "    Credentials saved to $CREDS_FILE"

@@ -1,7 +1,6 @@
 {{/*
 DNS aliases so hardcoded frontend nginx upstreams can resolve.
-nightowl-web container uses proxy_pass http://nightowl-api:8080
-bookowl-web container uses proxy_pass http://bookowl-api:8081
+owlstack-web container uses proxy_pass http://nightowl-api:8080
 */}}
 apiVersion: v1
 kind: Service
@@ -11,14 +10,4 @@ metadata:
     {{- include "umbrella-owl.labels" . | nindent 4 }}
 spec:
   type: ExternalName
-  externalName: {{ .Release.Name }}-nightowl.{{ .Release.Namespace }}.svc.cluster.local
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: bookowl-api
-  labels:
-    {{- include "umbrella-owl.labels" . | nindent 4 }}
-spec:
-  type: ExternalName
-  externalName: {{ .Release.Name }}-bookowl-api.{{ .Release.Namespace }}.svc.cluster.local
+  externalName: {{ .Release.Name }}-owlstack.{{ .Release.Namespace }}.svc.cluster.local

@@ -19,48 +19,28 @@ All subcharts (owl apps and third-party dependencies) are pulled from Helm regis
 
 ## Owl Ecosystem — Components
 
-### NightOwl — Incident & On-Call Platform
+### Owlstack — Unified Operations Platform (NightOwl + TicketOwl)
 
-- **Repo:** `github.com/wisbric/nightowl`
-- **Chart name:** `nightowl`
-- **Chart location (in source):** `deploy/helm/nightowl/`
-- **Container images:** `ghcr.io/wisbric/nightowl` (API + worker), `ghcr.io/wisbric/nightowl-web` (frontend)
+- **Repo:** `github.com/wisbric/owlstack`
+- **Chart name:** `owlstack`
+- **Chart location (in source):** `deploy/helm/owlstack/`
+- **Container images:** `ghcr.io/wisbric/owlstack` (API + worker), `ghcr.io/wisbric/owlstack-web` (frontend)
 - **Deployments:** `api` (2 replicas), `worker` (1 replica), `frontend` (optional, disabled by default)
 - **Ports:** API 8080, frontend 80
-- **Requires:** PostgreSQL 16+, Redis 7+
-- **Integrations:** OIDC, Slack, Mattermost, Twilio, BookOwl API, OpenTelemetry
-
-### BookOwl — Knowledge Management Platform
-
-- **Repo:** `github.com/wisbric/bookowl`
-- **Chart name:** `bookowl`
-- **Chart location (in source):** `deploy/helm/bookowl/`
-- **Container images:** `ghcr.io/wisbric/bookowl` (API), `ghcr.io/wisbric/bookowl-web` (frontend), `ghcr.io/wisbric/bookowl-collab` (Hocuspocus collab server)
-- **Deployments:** `api` (2 replicas), `web` (2 replicas), `collab` (2 replicas)
-- **Ports:** API 8081, web 80, collab 1234
-- **Requires:** PostgreSQL 16+, Redis 7+, S3-compatible storage (MinIO or AWS S3)
-- **Integrations:** OIDC, NightOwl API, OpenTelemetry
-
-### TicketOwl — Ticket Management Portal
-
-- **Repo:** `github.com/wisbric/ticketowl`
-- **Chart name:** `ticketowl`
-- **Chart location (in source):** `charts/ticketowl/`
-- **Container images:** `ghcr.io/wisbric/ticketowl` (API + worker)
-- **Deployments:** `api` (2 replicas), `worker` (1 replica), `migration` (pre-deploy Job)
-- **Ports:** API 8082
-- **Requires:** PostgreSQL 16+, Redis 7+, Zammad 6.3+
-- **Integrations:** OIDC, NightOwl API, BookOwl API, Zammad API, OpenTelemetry
+- **Requires:** PostgreSQL 16+, Redis 7+, Zammad 6.3+ (for ticket management)
+- **Integrations:** OIDC, Slack, Mattermost, Twilio, Outline API, Zammad API, OpenTelemetry
 
 ### Third-Party Dependencies
 
 | Dependency | Helm Registry | Purpose |
 |------------|---------------|---------|
-| `postgresql` | `oci://registry-1.docker.io/bitnamicharts/postgresql` | Shared database (or one per owl app) |
+| `postgresql` | `oci://registry-1.docker.io/bitnamicharts/postgresql` | Shared database |
 | `redis` | `oci://registry-1.docker.io/bitnamicharts/redis` | Caching, event queues |
-| `keycloak` | `oci://registry-1.docker.io/bitnamicharts/keycloak` | OIDC identity provider shared by all owl apps (browser sessions use `wisbric_session` HttpOnly cookies via `core/pkg/auth`) |
-| `zammad` | `https://zammad.github.io/zammad-helm` | Ticket engine (TicketOwl backend) |
-| `minio` | `oci://registry-1.docker.io/bitnamicharts/minio` | S3-compatible object storage for BookOwl images (optional — can use AWS S3 instead) |
+| `keycloak` | `oci://registry-1.docker.io/bitnamicharts/keycloak` | OIDC identity provider (browser sessions use `wisbric_session` HttpOnly cookies via `core/pkg/auth`) |
+| `zammad` | `https://zammad.github.io/zammad-helm` | Ticket engine backend |
+| `keep` | `https://keephq.github.io/helm-charts` | AIOps alert management (SSO via oauth2-proxy) |
+| `outline` | `https://helm.liam.sh` (lrstanley) | Collaborative wiki, replaces BookOwl |
+| `garage` | `https://charts.derwitt.dev` | S3-compatible storage for Outline uploads |
 
 ## Repo Structure
 
@@ -76,118 +56,28 @@ umbrella-owl/
 ├── values.lab-secrets.yaml       # Lab secrets (not committed — gitignored)
 ├── templates/
 │   ├── _helpers.tpl              # Shared template helpers
-│   └── NOTES.txt                 # Post-install instructions
+│   ├── NOTES.txt                 # Post-install instructions
+│   ├── ghcr-secret.yaml          # GHCR image pull secret
+│   ├── keycloak-realm-import.yaml # Keycloak realm bootstrap job
+│   ├── job-zammad-setup.yaml     # Zammad service user setup job
+│   ├── configmap-zammad-setup.yaml # Zammad setup SQL
+│   ├── secret-keep.yaml          # Keep secrets (DB connection, NextAuth)
+│   ├── secret-outline.yaml       # Outline secrets (keys, DB, Redis, OIDC)
+│   ├── keep-oauth2-proxy.yaml    # oauth2-proxy Deployment + Service for Keep SSO
+│   └── keep-oauth2-proxy-ingress.yaml # Ingress routing traffic through oauth2-proxy
 ├── deploy/
 │   ├── apply-secrets.sh          # Helper to apply secrets to cluster
 │   └── setup-zammad.sh           # Zammad initial setup script
 ├── keycloak/
-│   └── owls-realm.json           # Keycloak realm export for all owl apps
+│   └── owls-realm.json           # Keycloak realm export for owl apps
 ├── docs/
 │   └── integration.md            # Cross-service integration notes
 ├── argocd/
 │   ├── dev.yaml                  # ArgoCD Application for dev/staging
 │   └── production.yaml           # ArgoCD Application for production
-├── .github/
-│   └── workflows/
-│       ├── lint.yml              # Helm lint + template validation on PRs
-│       └── release.yml           # Package and push umbrella chart to GHCR on tag
 ├── .helmignore
 ├── CLAUDE.md                     # This file
 └── README.md                     # Human-facing documentation
-```
-
-## Chart.yaml Dependencies
-
-```yaml
-apiVersion: v2
-name: umbrella-owl
-description: Umbrella Helm chart for the Wisbric owl ecosystem
-type: application
-version: 0.1.4
-appVersion: "0.1.4"
-
-dependencies:
-  # Owl applications — OCI from GHCR
-  - name: nightowl
-    version: "0.1.9"
-    repository: oci://ghcr.io/wisbric/charts
-  - name: bookowl
-    version: "0.1.12"
-    repository: oci://ghcr.io/wisbric/charts
-  - name: ticketowl
-    version: "0.1.17"
-    repository: oci://ghcr.io/wisbric/charts
-
-  # Third-party — upstream Helm registries
-  - name: postgresql
-    version: "16.4.1"
-    repository: oci://registry-1.docker.io/bitnamicharts
-    condition: postgresql.enabled
-  - name: redis
-    version: "20.6.2"
-    repository: oci://registry-1.docker.io/bitnamicharts
-    condition: redis.enabled
-  - name: keycloak
-    version: "25.2.0"
-    repository: oci://registry-1.docker.io/bitnamicharts
-    condition: keycloak.enabled
-  - name: zammad
-    version: "10.3.0"
-    repository: https://zammad.github.io/zammad-helm
-    condition: zammad.enabled
-  - name: minio
-    version: "14.8.5"
-    repository: oci://registry-1.docker.io/bitnamicharts
-    condition: minio.enabled
-```
-
-## Values Namespacing
-
-The top-level `values.yaml` uses Helm's subchart namespacing convention. Each subchart's values live under a key matching its chart name:
-
-```yaml
-# Owl apps
-nightowl:
-  image:
-    tag: "v0.1.0"
-  secrets:
-    databaseUrl: "postgres://..."
-  # ... all nightowl chart values
-
-bookowl:
-  image:
-    tag: "v0.1.0"
-  secrets:
-    databaseUrl: "postgres://..."
-
-ticketowl:
-  image:
-    tag: "v0.1.0"
-  secrets:
-    dbUrl: "postgres://..."
-
-# Third-party
-postgresql:
-  enabled: true
-  auth:
-    postgresPassword: ""
-  # ...
-
-redis:
-  enabled: true
-  # ...
-
-keycloak:
-  enabled: true
-  # ...
-
-zammad:
-  enabled: true
-  # ...
-
-minio:
-  enabled: false
-  # ...
 ```
 
 ## Cross-Service Wiring
@@ -196,54 +86,18 @@ These are the integration points that the umbrella values must wire together:
 
 | From | To | Values to set |
 |------|----|---------------|
-| NightOwl | PostgreSQL | `nightowl.secrets.databaseUrl` |
-| NightOwl | Redis | `nightowl.secrets.redisUrl` |
-| NightOwl | Keycloak | `nightowl.secrets.oidcIssuerUrl`, `oidcClientId`, `oidcClientSecret` |
-| NightOwl | Session secret | `nightowl.secrets.sessionSecretKey` (shared HMAC key for `wisbric_session` cookies) |
-| NightOwl | BookOwl | Tenant-level config (not Helm values — configured per-tenant at runtime) |
-| BookOwl | PostgreSQL | `bookowl.secrets.databaseUrl` |
-| BookOwl | Redis | `bookowl.secrets.redisUrl` |
-| BookOwl | Keycloak | `bookowl.secrets.oidcIssuer`, `oidcClientId`, `oidcClientSecret` |
-| BookOwl | Session secret | `bookowl.secrets.sessionSecretKey` (must match NightOwl's for cross-service SSO) |
-| BookOwl | S3/MinIO | `bookowl.config.storageBackend`, `s3Endpoint`, `s3Bucket`, etc. |
-| BookOwl | NightOwl | `bookowl.config.nightowlApiUrl`, `bookowl.secrets.nightowlApiKey` |
-| TicketOwl | PostgreSQL | `ticketowl.secrets.dbUrl` |
-| TicketOwl | Redis | `ticketowl.secrets.redisUrl` |
-| TicketOwl | Keycloak | `ticketowl.secrets.oidcIssuer`, `oidcClientId` |
-| TicketOwl | Session secret | `ticketowl.secrets.sessionSecretKey` (must match NightOwl's for cross-service SSO) |
-| TicketOwl | Zammad | Tenant-level config (Zammad URL + API token stored per-tenant in DB) |
-| TicketOwl | NightOwl | `ticketowl.config.nightowlApiUrl`, `ticketowl.secrets.nightowlApiKey` |
-| TicketOwl | BookOwl | `ticketowl.config.bookowlApiUrl`, `ticketowl.secrets.bookowlApiKey` |
-
-## GitHub Actions — Owl Repo Chart Publishing
-
-Each owl repo needs a workflow step that packages and pushes its Helm chart to GHCR on merge to main. This is **not in this repo** — it runs in each owl repo's CI. The pattern:
-
-```yaml
-# In each owl repo's .github/workflows/release.yml
-- name: Push Helm chart
-  run: |
-    echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
-    helm package deploy/helm/<chart-name>
-    helm push <chart-name>-*.tgz oci://ghcr.io/wisbric/charts
-```
-
-Chart locations per repo:
-- **nightowl:** `deploy/helm/nightowl/`
-- **bookowl:** `deploy/helm/bookowl/`
-- **ticketowl:** `charts/ticketowl/`
-
-## GitHub Actions — This Repo
-
-### `lint.yml` (on PRs)
-1. `helm lint .` — validate chart structure
-2. `helm template umbrella-owl .` — verify templates render without errors
-3. `helm dep build .` — verify all dependencies resolve
-
-### `release.yml` (on version tags `v*`)
-1. `helm dep build .` — pull all subchart dependencies
-2. `helm package .` — package the umbrella chart
-3. `helm push umbrella-owl-*.tgz oci://ghcr.io/wisbric/charts` — push to GHCR
+| Owlstack | PostgreSQL | `owlstack.secrets.databaseUrl` |
+| Owlstack | Redis | `owlstack.secrets.redisUrl` |
+| Owlstack | Keycloak | `owlstack.secrets.oidcIssuerUrl`, `oidcClientId`, `oidcClientSecret` |
+| Owlstack | Session secret | `owlstack.secrets.sessionSecret` (shared HMAC key for `wisbric_session` cookies) |
+| Owlstack | Zammad | `owlstack.config.zammadUrl`, `owlstack.secrets.zammadToken` (defaults for seed tenant) |
+| Owlstack | Outline | `owlstack.config.outlineUrl`, `owlstack.secrets.outlineApiToken` |
+| Keep | PostgreSQL | `keep.secrets.databaseConnectionString` (SQLAlchemy format) |
+| Keep | Keycloak | SSO via oauth2-proxy (`keep.oauth2Proxy.*`) — Keep OSS lacks native Keycloak support |
+| Outline | PostgreSQL | `outline.secrets.databaseUrl` |
+| Outline | Redis | `outline.secrets.redisUrl` (DB index 3) |
+| Outline | Keycloak | OIDC directly (`outline.environment` OIDC_* vars) |
+| Outline | Garage | S3 via `outline.environment` AWS_* vars |
 
 ## Lab Deployment
 

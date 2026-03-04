@@ -20,11 +20,11 @@ registryCredentials:
   password: ""
 
 # -----------------------------------------------------------------------------
-# NightOwl — Incident management, on-call, alert routing
-# Chart: oci://ghcr.io/wisbric/charts/nightowl
-# Source values: nightowl/deploy/helm/nightowl/values.yaml
+# Owlstack — Unified operations platform (NightOwl + TicketOwl merged)
+# Chart: owlstack/deploy/helm/owlstack
+# Source values: owlstack/deploy/helm/owlstack/values.yaml
 # -----------------------------------------------------------------------------
-nightowl:
+owlstack:
   imagePullSecrets:
     - name: ghcr-credentials
 
@@ -33,14 +33,14 @@ nightowl:
     worker: 1
 
   image:
-    repository: ghcr.io/wisbric/nightowl
+    repository: ghcr.io/wisbric/owlstack
     pullPolicy: IfNotPresent
     tag: ""
 
   frontend:
     enabled: true
     image:
-      repository: ghcr.io/wisbric/nightowl-web
+      repository: ghcr.io/wisbric/owlstack-web
       pullPolicy: IfNotPresent
       tag: ""
     replicas: 2
@@ -78,6 +78,9 @@ nightowl:
     logFormat: json
     corsAllowedOrigins: ""
     metricsPath: /metrics
+    workerPollSeconds: "60"
+    zammadUrl: ""
+    outlineUrl: ""
 
   secrets:
     create: true
@@ -91,6 +94,9 @@ nightowl:
     slackBotToken: ""
     slackSigningSecret: ""
     slackAlertChannel: ""
+    encryptionKey: ""
+    zammadToken: ""
+    outlineApiToken: ""
 
   service:
     type: ClusterIP
@@ -118,200 +124,6 @@ nightowl:
     minAvailable: 1
 
 # -----------------------------------------------------------------------------
-# BookOwl — Knowledge management, runbooks, collaborative editor
-# Chart: oci://ghcr.io/wisbric/charts/bookowl
-# Source values: bookowl/deploy/helm/bookowl/values.yaml
-# -----------------------------------------------------------------------------
-bookowl:
-  image:
-    repository: ghcr.io/wisbric/bookowl
-    pullPolicy: IfNotPresent
-    tag: ""
-
-  web:
-    image:
-      repository: ghcr.io/wisbric/bookowl-web
-      pullPolicy: IfNotPresent
-      tag: ""
-    replicas: 2
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 200m
-        memory: 128Mi
-
-  api:
-    replicas: 2
-    port: 8081
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 256Mi
-
-  collab:
-    enabled: true
-    image:
-      repository: ghcr.io/wisbric/bookowl-collab
-      tag: ""
-    replicas: 2
-    port: 1234
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 256Mi
-    wsUrl: ""
-    ingress:
-      enabled: false
-      host: collab.bookowl.example.com
-
-  secretKey: ""
-
-  database:
-    url: ""
-
-  redis:
-    url: ""
-    host: ""
-    port: "6379"
-    password: ""
-
-  oidc:
-    issuerUrl: ""
-    clientId: bookowl
-
-  nightowl:
-    apiUrl: ""
-    apiKey: ""
-
-  ingress:
-    enabled: false
-    className: nginx
-    annotations: {}
-    hosts:
-      - host: bookowl.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-            service: web
-          - path: /api
-            pathType: Prefix
-            service: api
-    tls: []
-
-  metrics:
-    enabled: false
-    serviceMonitor:
-      enabled: false
-      interval: 30s
-
-  pdb:
-    enabled: true
-    minAvailable: 1
-
-  serviceAccount:
-    create: true
-    name: ""
-
-  imagePullSecrets:
-    - name: ghcr-credentials
-  extraEnv: []
-
-# -----------------------------------------------------------------------------
-# TicketOwl — Ticket management portal over Zammad
-# Chart: oci://ghcr.io/wisbric/charts/ticketowl
-# Source values: ticketowl/charts/ticketowl/values.yaml
-# -----------------------------------------------------------------------------
-ticketowl:
-  imagePullSecrets:
-    - name: ghcr-credentials
-
-  image:
-    repository: ghcr.io/wisbric/ticketowl
-    pullPolicy: IfNotPresent
-    tag: ""
-
-  api:
-    replicaCount: 2
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 256Mi
-    autoscaling:
-      enabled: false
-      minReplicas: 2
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 80
-
-  worker:
-    replicaCount: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 250m
-        memory: 256Mi
-
-  config:
-    logLevel: info
-    logFormat: json
-    port: "8082"
-    workerPollSeconds: "60"
-    nightowlApiUrl: ""
-    bookowlApiUrl: ""
-    otelEndpoint: ""
-
-  secrets:
-    create: true
-    existingSecret: ""
-    dbUrl: ""
-    redisUrl: ""
-    oidcIssuer: ""
-    oidcClientId: ""
-    encryptionKey: ""
-    nightowlApiKey: ""
-    bookowlApiKey: ""
-
-  service:
-    type: ClusterIP
-    port: 8082
-
-  ingress:
-    enabled: false
-    className: nginx
-    annotations: {}
-    hosts:
-      - host: ticketowl.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-
-  podDisruptionBudget:
-    enabled: true
-    minAvailable: 1
-
-  migration:
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 200m
-        memory: 128Mi
-
-# -----------------------------------------------------------------------------
 # PostgreSQL (Bitnami) — Shared database
 # Chart: oci://registry-1.docker.io/bitnamicharts/postgresql
 # Set enabled: false to use an external PostgreSQL instance instead
@@ -333,16 +145,11 @@ postgresql:
         memory: 1Gi
     initdb:
       scripts:
-        # Create databases and users for each owl app
+        # Create databases and users for owl apps
         create-databases.sql: |
-          CREATE DATABASE bookowl;
-          CREATE DATABASE ticketowl;
+          CREATE DATABASE nightowl;
           CREATE USER nightowl WITH PASSWORD 'changeme';
-          CREATE USER bookowl WITH PASSWORD 'changeme';
-          CREATE USER ticketowl WITH PASSWORD 'changeme';
           GRANT ALL PRIVILEGES ON DATABASE nightowl TO nightowl;
-          GRANT ALL PRIVILEGES ON DATABASE bookowl TO bookowl;
-          GRANT ALL PRIVILEGES ON DATABASE ticketowl TO ticketowl;
 
 # -----------------------------------------------------------------------------
 # Redis (Bitnami) — Shared cache, sessions, event queues
@@ -407,12 +214,15 @@ keycloak:
     enabled: true
 
 # -----------------------------------------------------------------------------
-# Zammad — Ticket engine backend for TicketOwl
+# Zammad — Ticket engine backend
 # Chart: https://zammad.github.io/zammad-helm
-# Set enabled: false if TicketOwl tenants bring their own Zammad instances
+# Set enabled: false if tenants bring their own Zammad instances
 # -----------------------------------------------------------------------------
 zammad:
   enabled: false
+  # API token for the Owlstack service user in Zammad.
+  # Used by the post-install setup job to create a persistent token.
+  owlstackToken: ""
   # Zammad bundles its own Redis subchart. The top-level Bitnami Redis
   # helpers leak into Zammad's Redis context (Helm template name collision).
   # Provide the missing sentinel value to prevent nil-pointer errors.
@@ -422,18 +232,141 @@ zammad:
         enabled: false
 
 # -----------------------------------------------------------------------------
-# MinIO (Bitnami) — S3-compatible object storage for BookOwl images
-# Chart: oci://registry-1.docker.io/bitnamicharts/minio
-# Set enabled: false to use AWS S3 or another external S3 provider instead
+# Keep (keephq.dev) — AIOps alert management
+# Chart: https://keephq.github.io/helm-charts
+# SSO via oauth2-proxy (Keep OSS does not support AUTH_TYPE=KEYCLOAK)
+# Set enabled: false to use Keep as an external service
 # -----------------------------------------------------------------------------
-minio:
+keep:
   enabled: false
-  auth:
-    rootUser: ""
-    rootPassword: ""
-  defaultBuckets: bookowl-images
+  # OIDC client secret for Keycloak realm import
+  oidcClientSecret: ""
+  # Name for umbrella-managed Keep secret
+  secretName: keep-secrets
+  # Secrets managed by umbrella chart (templates/secret-keep.yaml)
+  secrets:
+    databaseConnectionString: ""  # postgresql+psycopg2://keep:<pw>@owl-postgresql:5432/keep
+    nextauthSecret: ""
+  # oauth2-proxy sidecar for SSO (templates/keep-oauth2-proxy.yaml)
+  oauth2Proxy:
+    enabled: true
+    clientId: keep
+    issuerUrl: ""
+    hostname: ""
+    cookieSecret: ""
+    skipTlsVerify: false
+  # Disable Keep's internal database — use shared PostgreSQL
+  database:
+    enabled: false
+  backend:
+    waitForDatabase:
+      enabled: false
+    env:
+      - name: AUTH_TYPE
+        value: OAUTH2PROXY
+      - name: SECRET_MANAGER_TYPE
+        value: k8s
+      - name: PORT
+        value: "8080"
+      - name: PUSHER_APP_ID
+        value: "1"
+      - name: PUSHER_APP_KEY
+        value: keepappkey
+      - name: PUSHER_APP_SECRET
+        value: keepappsecret
+      - name: PUSHER_HOST
+        value: keep-websocket
+      - name: PUSHER_PORT
+        value: "6001"
+    envFromSecret: keep-secrets
+  frontend:
+    env:
+      - name: NEXTAUTH_SECRET
+        value: "changeme"
+      - name: VERCEL
+        value: "1"
+      - name: ENV
+        value: production
+      - name: NODE_ENV
+        value: production
+      - name: HOSTNAME
+        value: 0.0.0.0
+      - name: PUSHER_APP_KEY
+        value: "keepappkey"
+      - name: FRIGADE_DISABLED
+        value: "true"
+    envFromSecret: keep-secrets
+  websocket:
+    enabled: true
+  global:
+    ingress:
+      enabled: false
+
+# -----------------------------------------------------------------------------
+# Outline (getoutline.com) — Collaborative wiki, replaces BookOwl
+# Chart: https://helm.liam.sh (lrstanley)
+# OIDC directly against Keycloak, S3 via Garage
+# Set enabled: false to use Outline as an external service
+# -----------------------------------------------------------------------------
+outline:
+  enabled: false
+  # OIDC client secret for Keycloak realm import
+  oidcClientSecret: ""
+  # Name for umbrella-managed Outline secret
+  secretName: outline-secrets
+  # Secrets managed by umbrella chart (templates/secret-outline.yaml)
+  secrets:
+    secretKey: ""
+    utilsSecret: ""
+    databaseUrl: ""       # postgres://outline:<pw>@owl-postgresql:5432/outline?sslmode=disable
+    redisUrl: ""          # redis://:@owl-redis-master:6379/3
+    oidcClientSecret: ""
+    awsAccessKeyId: ""
+    awsSecretAccessKey: ""
+  # Disable bundled subcharts — use shared infrastructure
+  postgresql:
+    enabled: false
+  minio:
+    enabled: false
+  dex:
+    enabled: false
+  redis:
+    enabled: false
+  cnpg:
+    enabled: false
+  # Outline app settings
+  outline:
+    generateEncryptionKeys: false  # We manage secrets via umbrella chart
+    url: ""
+    fileStorage:
+      system: s3
+  environment: []       # Non-secret env vars (OIDC, S3, etc.)
+  environmentFrom:
+    - secretRef:
+        name: outline-secrets
+  ingress:
+    enabled: false
+
+# -----------------------------------------------------------------------------
+# Garage — S3-compatible storage for Outline uploads
+# Chart: https://charts.derwitt.dev
+# Set enabled: false to use an external S3-compatible store
+# -----------------------------------------------------------------------------
+garage:
+  enabled: false
+  garage:
+    replicationFactor: "1"      # Single-node lab deployment
+    s3:
+      api:
+        region: garage
+        rootDomain: ".s3.garage.tld"
+  deployment:
+    replicaCount: 1
   persistence:
-    size: 10Gi
+    meta:
+      size: 1Gi
+    data:
+      size: 10Gi
 
 # -----------------------------------------------------------------------------
 # Global values — passed to all subcharts automatically by Helm

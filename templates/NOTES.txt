@@ -5,25 +5,11 @@
 
 The following components have been deployed:
 
-  NightOwl (incident management)
-  {{- if .Values.nightowl.ingress.enabled }}
-    URL: https://{{ (index .Values.nightowl.ingress.hosts 0).host }}
+  Owlstack (incident management + ticketing)
+  {{- if .Values.owlstack.ingress.enabled }}
+    URL: https://{{ (index .Values.owlstack.ingress.hosts 0).host }}
   {{- else }}
-    Access via: kubectl port-forward svc/{{ .Release.Name }}-nightowl 8080:80 -n {{ .Release.Namespace }}
-  {{- end }}
-
-  BookOwl (knowledge management)
-  {{- if .Values.bookowl.ingress.enabled }}
-    URL: https://{{ (index .Values.bookowl.ingress.hosts 0).host }}
-  {{- else }}
-    Access via: kubectl port-forward svc/{{ .Release.Name }}-bookowl-web 3001:80 -n {{ .Release.Namespace }}
-  {{- end }}
-
-  TicketOwl (ticket management)
-  {{- if .Values.ticketowl.ingress.enabled }}
-    URL: https://{{ (index .Values.ticketowl.ingress.hosts 0).host }}
-  {{- else }}
-    Access via: kubectl port-forward svc/{{ .Release.Name }}-ticketowl 8082:{{ .Values.ticketowl.service.port }} -n {{ .Release.Namespace }}
+    Access via: kubectl port-forward svc/{{ .Release.Name }}-owlstack 8080:80 -n {{ .Release.Namespace }}
   {{- end }}
 
 {{- if .Values.postgresql.enabled }}
@@ -50,10 +36,41 @@ The following components have been deployed:
     Service: {{ .Release.Name }}-zammad:8080
 {{- end }}
 
-{{- if .Values.minio.enabled }}
+{{- if .Values.keep.enabled }}
 
-  MinIO (S3 storage)
-    Service: {{ .Release.Name }}-minio:9000
+  Keep (AIOps alerts)
+    Service: {{ .Release.Name }}-keep-frontend:3000
+  {{- if .Values.keep.oauth2Proxy.enabled }}
+    SSO proxy: {{ .Release.Name }}-keep-oauth2-proxy:4180
+    {{- if .Values.keep.oauth2Proxy.hostname }}
+    URL: https://{{ .Values.keep.oauth2Proxy.hostname }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.outline.enabled }}
+
+  Outline (wiki)
+  {{- if and .Values.outline.ingress.enabled (gt (len (.Values.outline.ingress.hosts | default (list))) 0) }}
+    URL: https://{{ (index .Values.outline.ingress.hosts 0).host }}
+  {{- else if .Values.outline.ingress.enabled }}
+    URL: (set outline.ingress.hosts[0].host)
+  {{- else }}
+    Access via: kubectl port-forward svc/{{ .Release.Name }}-outline 3000:3000 -n {{ .Release.Namespace }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.garage.enabled }}
+
+  Garage (S3 storage)
+    S3 API: {{ .Release.Name }}-garage:3900
+    NOTE: After first deploy, run layout assign + bucket creation:
+      kubectl exec -n {{ .Release.Namespace }} {{ .Release.Name }}-garage-0 -- ./garage status
+      kubectl exec -n {{ .Release.Namespace }} {{ .Release.Name }}-garage-0 -- ./garage layout assign -z dc1 -c 10G <node-id>
+      kubectl exec -n {{ .Release.Namespace }} {{ .Release.Name }}-garage-0 -- ./garage layout apply --version 1
+      kubectl exec -n {{ .Release.Namespace }} {{ .Release.Name }}-garage-0 -- ./garage key create outline-key
+      kubectl exec -n {{ .Release.Namespace }} {{ .Release.Name }}-garage-0 -- ./garage bucket create outline
+      kubectl exec -n {{ .Release.Namespace }} {{ .Release.Name }}-garage-0 -- ./garage bucket allow --read --write --owner outline --key outline-key
 {{- end }}
 
 Verify all pods are running:

@@ -1,0 +1,43 @@
+{{/*
+Ingress for Keep via oauth2-proxy
+Routes all Keep traffic through the oauth2-proxy for SSO authentication.
+The proxy handles /oauth2/* paths directly and forwards authenticated
+requests to the Keep frontend.
+*/}}
+{{- if and .Values.keep.enabled .Values.keep.oauth2Proxy.enabled .Values.keep.oauth2Proxy.hostname }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-keep-oauth2-proxy
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keep-oauth2-proxy
+  annotations:
+    {{- with .Values.keep.ingressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.keep.oauth2Proxy.hostname }}
+      http:
+        paths:
+          - path: /oauth2
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-keep-oauth2-proxy
+                port:
+                  number: 4180
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-keep-oauth2-proxy
+                port:
+                  number: 4180
+  {{- if .Values.keep.ingressTls }}
+  tls:
+    {{- toYaml .Values.keep.ingressTls | nindent 4 }}
+  {{- end }}
+{{- end }}

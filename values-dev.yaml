@@ -6,20 +6,22 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# NightOwl
+# Owlstack — Unified operations platform
 # -----------------------------------------------------------------------------
-nightowl:
+owlstack:
   replicaCount:
     api: 1
     worker: 1
 
   image:
     tag: main  # track latest main branch build
+    pullPolicy: Always
 
   frontend:
     enabled: true
     image:
       tag: main
+      pullPolicy: Always
     replicas: 1
     resources:
       requests:
@@ -61,146 +63,28 @@ nightowl:
     hosts:
       - host: nightowl.dev.example.com
         paths:
+          - path: /api
+            pathType: Prefix
+            service: api
+          - path: /auth
+            pathType: Prefix
+            service: api
+          - path: /status
+            pathType: Prefix
+            service: api
+          - path: /healthz
+            pathType: Prefix
+            service: api
+          - path: /metrics
+            pathType: Prefix
+            service: api
           - path: /
             pathType: Prefix
+            service: frontend
     tls: []
 
   serviceMonitor:
     enabled: false
-
-  podDisruptionBudget:
-    enabled: false
-
-# -----------------------------------------------------------------------------
-# BookOwl
-# -----------------------------------------------------------------------------
-bookowl:
-  image:
-    tag: main
-
-  web:
-    image:
-      tag: main
-    replicas: 1
-    resources:
-      requests:
-        cpu: 25m
-        memory: 32Mi
-      limits:
-        cpu: 100m
-        memory: 64Mi
-
-  api:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 250m
-        memory: 128Mi
-
-  collab:
-    replicas: 1
-    image:
-      tag: main
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 250m
-        memory: 128Mi
-    wsUrl: "wss://collab.bookowl.dev.example.com"
-    ingress:
-      enabled: true
-      host: collab.bookowl.dev.example.com
-
-  database:
-    url: "postgres://bookowl:changeme@owl-postgresql:5432/bookowl?sslmode=disable"
-
-  redis:
-    url: "redis://owl-redis-master:6379/1"
-    host: owl-redis-master
-    port: "6379"
-
-  oidc:
-    issuerUrl: ""
-    clientId: bookowl
-
-  nightowl:
-    apiUrl: "http://owl-nightowl:80"
-
-  ingress:
-    enabled: true
-    className: nginx
-    annotations: {}
-    hosts:
-      - host: bookowl.dev.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-            service: web
-          - path: /api
-            pathType: Prefix
-            service: api
-    tls: []
-
-  metrics:
-    enabled: false
-    serviceMonitor:
-      enabled: false
-
-  pdb:
-    enabled: false
-
-# -----------------------------------------------------------------------------
-# TicketOwl
-# -----------------------------------------------------------------------------
-ticketowl:
-  image:
-    tag: main
-
-  api:
-    replicaCount: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 250m
-        memory: 128Mi
-    autoscaling:
-      enabled: false
-
-  worker:
-    replicaCount: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 125m
-        memory: 128Mi
-
-  config:
-    logLevel: debug
-    nightowlApiUrl: "http://owl-nightowl:80"
-    bookowlApiUrl: "http://owl-bookowl-api:8081"
-
-  secrets:
-    dbUrl: "postgres://ticketowl:changeme@owl-postgresql:5432/ticketowl?sslmode=disable"
-    redisUrl: "redis://owl-redis-master:6379/2"
-
-  ingress:
-    enabled: true
-    className: nginx
-    hosts:
-      - host: ticketowl.dev.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
 
   podDisruptionBudget:
     enabled: false
@@ -256,13 +140,19 @@ zammad:
   enabled: false
 
 # -----------------------------------------------------------------------------
-# MinIO — enabled in dev for BookOwl image storage
+# Keep — disabled in dev by default
 # -----------------------------------------------------------------------------
-minio:
-  enabled: true
-  auth:
-    rootUser: minioadmin
-    rootPassword: minioadmin
-  defaultBuckets: bookowl-images
-  persistence:
-    size: 2Gi
+keep:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Outline — disabled in dev by default
+# -----------------------------------------------------------------------------
+outline:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Garage — disabled in dev by default
+# -----------------------------------------------------------------------------
+garage:
+  enabled: false

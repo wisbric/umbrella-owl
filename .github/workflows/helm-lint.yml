@@ -25,6 +25,14 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
+      - name: Add external Helm repos
+        run: |
+          helm repo add zammad https://zammad.github.io/zammad-helm
+          helm repo add keephq https://keephq.github.io/helm-charts
+          helm repo add lrstanley https://helm.liam.sh
+          helm repo add derwitt https://charts.derwitt.dev
+          helm repo update
+
       # ---------------------------------------------------------------
       # Build and lint umbrella chart
       # ---------------------------------------------------------------
@@ -45,35 +53,47 @@ jobs:
           registryCredentials:
             username: "stub"
             password: "stub"
-          nightowl:
+          owlstack:
             secrets:
               databaseUrl: "postgres://stub:stub@localhost/nightowl"
+              redisUrl: "redis://localhost:6379/0"
               sessionSecret: "stub-session-secret"
               oidcClientSecret: "stub-oidc-secret"
-          bookowl:
-            secretKey: "stub-secret-key"
-            database:
-              url: "postgres://stub:stub@localhost/bookowl"
-            nightowl:
-              apiKey: "stub-api-key"
-          ticketowl:
-            secrets:
-              dbUrl: "postgres://stub:stub@localhost/ticketowl"
               encryptionKey: "stub-encryption-key"
-              nightowlApiKey: "stub-api-key"
-              bookowlApiKey: "stub-api-key"
+              zammadToken: "stub-zammad-token"
           postgresql:
             auth:
               postgresPassword: "stub"
+          redis:
+            auth:
+              password: "stub"
           keycloak:
             auth:
               adminPassword: "stub"
             externalDatabase:
               password: "stub"
-          minio:
-            auth:
-              rootUser: "stub"
-              rootPassword: "stub"
+          zammad:
+            owlstackToken: "stub-token"
+            zammadConfig:
+              postgresql:
+                pass: "stub"
+              redis:
+                pass: "stub"
+          keep:
+            oidcClientSecret: "stub"
+            secrets:
+              databaseConnectionString: "postgresql+psycopg2://stub:stub@localhost/keep"
+              nextauthSecret: "stub"
+            oauth2Proxy:
+              cookieSecret: "stub"
+          outline:
+            oidcClientSecret: "stub"
+            secrets:
+              secretKey: "stub"
+              utilsSecret: "stub"
+              databaseUrl: "postgres://stub:stub@localhost/outline"
+              redisUrl: "redis://localhost:6379/3"
+              oidcClientSecret: "stub"
           STUBEOF
 
       - name: Dry-run helm template

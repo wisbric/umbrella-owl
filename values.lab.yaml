@@ -26,9 +26,9 @@ registryCredentials:
   password: ""    # Set via values.lab-secrets.yaml
 
 # -----------------------------------------------------------------------------
-# NightOwl
+# Owlstack — Unified operations platform (NightOwl + TicketOwl)
 # -----------------------------------------------------------------------------
-nightowl:
+owlstack:
   seed:
     enabled: true
 
@@ -86,9 +86,9 @@ nightowl:
   config:
     logLevel: debug
     corsAllowedOrigins: "https://nightowl.devops.lab"
-    bookowlUrl: "https://bookowl.devops.lab"
-    ticketowlUrl: "https://ticketowl.devops.lab"
-    bookowlApiUrl: "http://owl-bookowl-api:8081/api/v1"
+    zammadUrl: "http://owl-zammad:8080"
+    workerPollSeconds: "60"
+    outlineUrl: "https://outline.devops.lab"
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
@@ -97,6 +97,9 @@ nightowl:
     oidcClientSecret: ""  # Set via values.lab-secrets.yaml
     oidcRedirectUrl: "https://nightowl.devops.lab/auth/oidc/callback"
     sessionSecret: ""     # Set via values.lab-secrets.yaml
+    encryptionKey: ""     # Set via values.lab-secrets.yaml
+    zammadToken: ""       # Set via values.lab-secrets.yaml
+    outlineApiToken: ""   # Set via values.lab-secrets.yaml
 
   ingress:
     enabled: true
@@ -138,243 +141,6 @@ nightowl:
     enabled: false
 
 # -----------------------------------------------------------------------------
-# BookOwl
-# -----------------------------------------------------------------------------
-bookowl:
-  seed:
-    enabled: true
-
-  publicUrl: "https://bookowl.devops.lab"
-
-  nightowl:
-    url: "https://nightowl.devops.lab"
-  ticketowl:
-    url: "https://ticketowl.devops.lab"
-
-  image:
-    tag: main
-    pullPolicy: Always
-
-  web:
-    image:
-      tag: main
-      pullPolicy: Always
-    replicas: 1
-    resources:
-      requests:
-        cpu: 25m
-        memory: 32Mi
-      limits:
-        cpu: 100m
-        memory: 64Mi
-
-  api:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 250m
-        memory: 128Mi
-
-  collab:
-    replicas: 1
-    image:
-      tag: main
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 250m
-        memory: 128Mi
-    wsUrl: "wss://bookowl.devops.lab/collab"
-    ingress:
-      enabled: true
-      host: bookowl.devops.lab
-      path: /collab
-      tlsSecretName: bookowl-tls
-
-  # Mount combined CA bundle so OIDC discovery trusts HTTPS Keycloak
-  extraVolumes:
-    - name: ca-bundle
-      configMap:
-        name: combined-ca-bundle
-  extraVolumeMounts:
-    - name: ca-bundle
-      mountPath: /etc/ssl/certs/ca-certificates.crt
-      subPath: ca-certificates.crt
-      readOnly: true
-
-  secretKey: ""  # Set via values.lab-secrets.yaml
-
-  database:
-    url: ""  # Set via values.lab-secrets.yaml
-
-  redis:
-    url: ""      # Set via values.lab-secrets.yaml
-    host: owl-redis-master
-    port: "6379"
-    password: ""  # Set via values.lab-secrets.yaml
-
-  oidc:
-    clientId: bookowl
-    clientSecret: ""  # Set via values.lab-secrets.yaml
-    redirectUrl: "https://bookowl.devops.lab/auth/oidc/callback"
-
-  nightowl:
-    apiUrl: "http://owl-nightowl:80"
-    apiKey: ""  # Set via values.lab-secrets.yaml
-    url: "https://nightowl.devops.lab"
-
-  ticketowl:
-    url: "https://ticketowl.devops.lab"
-
-  ingress:
-    enabled: true
-    className: nginx
-    annotations:
-      cert-manager.io/issuer: step-cluster-issuer
-      cert-manager.io/issuer-kind: StepClusterIssuer
-      cert-manager.io/issuer-group: certmanager.step.sm
-      nginx.ingress.kubernetes.io/proxy-body-size: "20m"
-    hosts:
-      - host: bookowl.devops.lab
-        paths:
-          - path: /api
-            pathType: Prefix
-            service: api
-          - path: /auth
-            pathType: Prefix
-            service: api
-          - path: /status
-            pathType: Prefix
-            service: api
-          - path: /
-            pathType: Prefix
-            service: web
-    tls:
-      - secretName: bookowl-tls
-        hosts:
-          - bookowl.devops.lab
-
-  metrics:
-    enabled: false
-    serviceMonitor:
-      enabled: false
-
-  pdb:
-    enabled: false
-
-# -----------------------------------------------------------------------------
-# TicketOwl
-# -----------------------------------------------------------------------------
-ticketowl:
-  seed:
-    enabled: true
-
-  image:
-    tag: main
-    pullPolicy: Always
-
-  web:
-    enabled: true
-    image:
-      tag: main
-      pullPolicy: Always
-    replicas: 1
-    resources:
-      requests:
-        cpu: 25m
-        memory: 32Mi
-      limits:
-        cpu: 100m
-        memory: 64Mi
-
-  api:
-    replicaCount: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 250m
-        memory: 128Mi
-    autoscaling:
-      enabled: false
-
-  worker:
-    replicaCount: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 125m
-        memory: 128Mi
-
-  # Mount step CA cert so OIDC discovery trusts HTTPS Keycloak
-  extraVolumes:
-    - name: ca-bundle
-      configMap:
-        name: combined-ca-bundle
-  extraVolumeMounts:
-    - name: ca-bundle
-      mountPath: /etc/ssl/certs/ca-certificates.crt
-      subPath: ca-certificates.crt
-      readOnly: true
-
-  config:
-    logLevel: debug
-    nightowlApiUrl: "http://owl-nightowl:80"
-    bookowlApiUrl: "http://owl-bookowl-api:8081"
-    nightowlUrl: "https://nightowl.devops.lab"
-    bookowlUrl: "https://bookowl.devops.lab"
-    zammadUrl: "http://owl-zammad:8080"
-
-  secrets:
-    dbUrl: ""             # Set via values.lab-secrets.yaml
-    redisUrl: ""            # Set via values.lab-secrets.yaml
-    oidcClientId: "ticketowl"
-    oidcClientSecret: ""  # Set via values.lab-secrets.yaml
-    oidcRedirectUrl: "https://ticketowl.devops.lab/auth/oidc/callback"
-    encryptionKey: ""     # Set via values.lab-secrets.yaml
-    nightowlApiKey: ""    # Set via values.lab-secrets.yaml
-    bookowlApiKey: ""     # Set via values.lab-secrets.yaml
-    zammadToken: ""       # Set via values.lab-secrets.yaml
-
-  ingress:
-    enabled: true
-    className: nginx
-    annotations:
-      cert-manager.io/issuer: step-cluster-issuer
-      cert-manager.io/issuer-kind: StepClusterIssuer
-      cert-manager.io/issuer-group: certmanager.step.sm
-    hosts:
-      - host: ticketowl.devops.lab
-        paths:
-          - path: /api
-            pathType: Prefix
-            service: api
-          - path: /auth
-            pathType: Prefix
-            service: api
-          - path: /status
-            pathType: Prefix
-            service: api
-          - path: /
-            pathType: Prefix
-            service: web
-    tls:
-      - secretName: ticketowl-tls
-        hosts:
-          - ticketowl.devops.lab
-
-  podDisruptionBudget:
-    enabled: false
-
-# -----------------------------------------------------------------------------
 # PostgreSQL — in-cluster for lab
 # -----------------------------------------------------------------------------
 postgresql:
@@ -399,7 +165,7 @@ postgresql:
     # database user passwords that must match the service database URLs.
 
 # -----------------------------------------------------------------------------
-# Redis — in-cluster, standalone, no auth
+# Redis — in-cluster, standalone
 # -----------------------------------------------------------------------------
 redis:
   enabled: true
@@ -464,10 +230,11 @@ keycloak:
     enabled: true
 
 # -----------------------------------------------------------------------------
-# Zammad — enabled for TicketOwl backend
+# Zammad — enabled for ticket management
 # -----------------------------------------------------------------------------
 zammad:
   enabled: true
+  owlstackToken: ""  # Set via values.lab-secrets.yaml
   # Auto-create admin user on fresh install (no-op if users already exist)
   autoWizard:
     enabled: true
@@ -532,16 +299,192 @@ zammad:
       cert-manager.io/issuer-group: certmanager.step.sm
 
 # -----------------------------------------------------------------------------
-# MinIO — S3-compatible storage for BookOwl images
+# Keep — AIOps alert management with oauth2-proxy SSO
 # -----------------------------------------------------------------------------
-minio:
+keep:
   enabled: true
-  image:
-    repository: bitnamilegacy/minio
-    tag: 2024.11.7-debian-12-r0
-  auth:
-    rootUser: ""      # Set via values.lab-secrets.yaml
-    rootPassword: ""  # Set via values.lab-secrets.yaml
-  defaultBuckets: bookowl-images
+  oidcClientSecret: ""  # Set via values.lab-secrets.yaml
+  secretName: keep-secrets
+  secrets:
+    databaseConnectionString: ""  # Set via values.lab-secrets.yaml
+    nextauthSecret: ""            # Set via values.lab-secrets.yaml
+  oauth2Proxy:
+    enabled: true
+    clientId: keep
+    issuerUrl: "https://keycloak.devops.lab/realms/owls"
+    hostname: keep.devops.lab
+    cookieSecret: ""  # Set via values.lab-secrets.yaml
+    skipTlsVerify: true  # Lab uses self-signed certs
+  database:
+    enabled: false
+  backend:
+    env:
+      - name: AUTH_TYPE
+        value: OAUTH2PROXY
+      - name: SECRET_MANAGER_TYPE
+        value: k8s
+      - name: PORT
+        value: "8080"
+      - name: PUSHER_APP_ID
+        value: "1"
+      - name: PUSHER_APP_KEY
+        value: keepappkey
+      - name: PUSHER_APP_SECRET
+        value: keepappsecret
+      - name: PUSHER_HOST
+        value: keep-websocket
+      - name: PUSHER_PORT
+        value: "6001"
+      - name: PROMETHEUS_MULTIPROC_DIR
+        value: "/tmp/prometheus"
+    envFromSecret: keep-secrets
+  frontend:
+    env:
+      - name: VERCEL
+        value: "1"
+      - name: ENV
+        value: production
+      - name: NODE_ENV
+        value: production
+      - name: HOSTNAME
+        value: 0.0.0.0
+      - name: PUSHER_APP_KEY
+        value: "keepappkey"
+      - name: FRIGADE_DISABLED
+        value: "true"
+    envFromSecret: keep-secrets
+  websocket:
+    enabled: true
+  # Disable Keep's built-in ingress — traffic goes through oauth2-proxy
+  global:
+    ingress:
+      enabled: false
+  # Umbrella-managed ingress annotations for oauth2-proxy route
+  ingressAnnotations:
+    cert-manager.io/issuer: step-cluster-issuer
+    cert-manager.io/issuer-kind: StepClusterIssuer
+    cert-manager.io/issuer-group: certmanager.step.sm
+  ingressTls:
+    - secretName: keep-tls
+      hosts:
+        - keep.devops.lab
+
+# -----------------------------------------------------------------------------
+# Outline — collaborative wiki (replaces BookOwl)
+# -----------------------------------------------------------------------------
+outline:
+  enabled: true
+  oidcClientSecret: ""  # Set via values.lab-secrets.yaml
+  secretName: outline-secrets
+  secrets:
+    secretKey: ""           # Set via values.lab-secrets.yaml
+    utilsSecret: ""         # Set via values.lab-secrets.yaml
+    databaseUrl: ""         # Set via values.lab-secrets.yaml
+    redisUrl: ""            # Set via values.lab-secrets.yaml
+    oidcClientSecret: ""    # Set via values.lab-secrets.yaml
+    awsAccessKeyId: ""      # Set via values.lab-secrets.yaml after Garage key creation
+    awsSecretAccessKey: ""  # Set via values.lab-secrets.yaml after Garage key creation
+  # Disable bundled subcharts — use shared infrastructure
+  postgresql:
+    enabled: false
+  minio:
+    enabled: false
+  dex:
+    enabled: false
+  redis:
+    enabled: false
+  cnpg:
+    enabled: false
+  # Outline app settings
+  outline:
+    generateEncryptionKeys: false
+    url: "https://outline.devops.lab"
+    fileStorage:
+      system: s3
+  # Non-secret env vars for OIDC and S3
+  environment:
+    # OIDC (Keycloak)
+    - name: OIDC_CLIENT_ID
+      value: outline
+    - name: OIDC_AUTH_URI
+      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/auth"
+    - name: OIDC_TOKEN_URI
+      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/token"
+    - name: OIDC_USERINFO_URI
+      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/userinfo"
+    - name: OIDC_LOGOUT_URI
+      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/logout"
+    - name: OIDC_USERNAME_CLAIM
+      value: preferred_username
+    - name: OIDC_DISPLAY_NAME
+      value: Keycloak
+    - name: OIDC_SCOPES
+      value: "openid profile email"
+    # S3 (Garage)
+    - name: AWS_S3_UPLOAD_BUCKET_URL
+      value: "http://owl-garage:3900"
+    - name: AWS_S3_UPLOAD_BUCKET_NAME
+      value: outline
+    - name: AWS_S3_FORCE_PATH_STYLE
+      value: "true"
+    - name: AWS_S3_ACL
+      value: private
+    - name: AWS_REGION
+      value: garage
+    # Trust self-signed CA for Keycloak OIDC discovery
+    - name: NODE_EXTRA_CA_CERTS
+      value: /etc/ssl/certs/ca-certificates.crt
+  # Inject secrets from umbrella-managed K8s Secret
+  environmentFrom:
+    - secretRef:
+        name: outline-secrets
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/issuer: step-cluster-issuer
+      cert-manager.io/issuer-kind: StepClusterIssuer
+      cert-manager.io/issuer-group: certmanager.step.sm
+    hosts:
+      - host: outline.devops.lab
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: outline-tls
+        hosts:
+          - outline.devops.lab
+  # Mount CA bundle for Keycloak OIDC discovery (self-signed certs)
+  extraVolumes:
+    - name: ca-bundle
+      configMap:
+        name: combined-ca-bundle
+  extraVolumeMounts:
+    - name: ca-bundle
+      mountPath: /etc/ssl/certs/ca-certificates.crt
+      subPath: ca-certificates.crt
+      readOnly: true
+
+# -----------------------------------------------------------------------------
+# Garage — S3-compatible storage for Outline uploads
+# -----------------------------------------------------------------------------
+garage:
+  enabled: true
+  garage:
+    replicationFactor: "1"
+    admin:
+      token:
+        create: true  # Enable Admin API for bucket/key management
+    s3:
+      api:
+        region: garage
+        rootDomain: ".s3.garage.devops.lab"
+  deployment:
+    replicaCount: 1
   persistence:
-    size: 5Gi
+    meta:
+      storageClass: longhorn
+      size: 1Gi
+    data:
+      storageClass: longhorn
+      size: 10Gi

@@ -33,6 +33,14 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
+      - name: Add external Helm repos
+        run: |
+          helm repo add zammad https://zammad.github.io/zammad-helm
+          helm repo add keephq https://keephq.github.io/helm-charts
+          helm repo add lrstanley https://helm.liam.sh
+          helm repo add derwitt https://charts.derwitt.dev
+          helm repo update
+
       # ---------------------------------------------------------------
       # Pin Chart.yaml versions to the release tag
       # ---------------------------------------------------------------
@@ -40,9 +48,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           sed -i "s|^version:.*|version: \"$VERSION\"|" Chart.yaml
-          sed -i "/name: nightowl/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
-          sed -i "/name: bookowl/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
-          sed -i "/name: ticketowl/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
+          sed -i "/name: owlstack/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
 
       - name: Build umbrella dependencies
         run: helm dep build .

@@ -53,8 +53,8 @@
   "clients": [
     {
       "clientId": "nightowl",
-      "name": "NightOwl",
-      "description": "Incident management and on-call platform",
+      "name": "NightOwl (Owlstack)",
+      "description": "Unified operations platform — incidents, tickets, on-call",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -65,14 +65,16 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "https://nightowl.devops.lab/*",
-        "http://localhost:3000/*"
+        "http://localhost:3000/*",
+        "http://localhost:5173/*"
       ],
       "webOrigins": [
         "https://nightowl.devops.lab",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://localhost:5173"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "https://nightowl.devops.lab/*##http://localhost:3000/*"
+        "post.logout.redirect.uris": "https://nightowl.devops.lab/*##http://localhost:3000/*##http://localhost:5173/*"
       },
       "protocolMappers": [
         {
@@ -105,25 +107,26 @@
       ]
     },
     {
-      "clientId": "bookowl",
-      "name": "BookOwl",
-      "description": "Knowledge management platform",
+      "clientId": "keep",
+      "name": "Keep (AIOps Alerts)",
+      "description": "AIOps alert management — SSO via oauth2-proxy",
       "enabled": true,
       "protocol": "openid-connect",
-      "publicClient": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "KEEP_OIDC_SECRET_PLACEHOLDER",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "https://bookowl.devops.lab/*",
-        "http://localhost:3001/*"
+        "https://keep.devops.lab/*",
+        "https://keep.devops.lab/oauth2/callback"
       ],
       "webOrigins": [
-        "https://bookowl.devops.lab",
-        "http://localhost:3001"
+        "https://keep.devops.lab"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "https://bookowl.devops.lab/*##http://localhost:3001/*"
+        "post.logout.redirect.uris": "https://keep.devops.lab/*"
       },
       "protocolMappers": [
         {
@@ -156,26 +159,35 @@
       ]
     },
     {
-      "clientId": "ticketowl",
-      "name": "TicketOwl",
-      "description": "Ticket management portal",
+      "clientId": "outline",
+      "name": "Outline (Wiki)",
+      "description": "Collaborative wiki — replaces BookOwl",
       "enabled": true,
       "protocol": "openid-connect",
-      "publicClient": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "OUTLINE_OIDC_SECRET_PLACEHOLDER",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "https://ticketowl.devops.lab/*",
-        "http://localhost:3002/*"
+        "https://outline.devops.lab/*",
+        "https://outline.devops.lab/auth/oidc.callback"
       ],
       "webOrigins": [
-        "https://ticketowl.devops.lab",
-        "http://localhost:3002"
+        "https://outline.devops.lab"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "https://ticketowl.devops.lab/*##http://localhost:3002/*"
+        "post.logout.redirect.uris": "https://outline.devops.lab/*"
       },
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "groups",
+        "offline_access"
+      ],
       "protocolMappers": [
         {
           "name": "realm-roles",
