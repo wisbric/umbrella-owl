@@ -351,6 +351,8 @@ keep:
     envFromSecret: keep-secrets
   frontend:
     env:
+      - name: NEXTAUTH_URL
+        value: "https://keep.devops.lab"
       - name: VERCEL
         value: "1"
       - name: ENV
