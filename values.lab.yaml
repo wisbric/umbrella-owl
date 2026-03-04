@@ -509,3 +509,4 @@ backup:
 # -----------------------------------------------------------------------------
 networkPolicies:
   enabled: false
+  ingressControllerNamespace: ingress-nginx

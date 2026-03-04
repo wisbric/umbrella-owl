@@ -388,6 +388,7 @@ backup:
 # -----------------------------------------------------------------------------
 networkPolicies:
   enabled: false
+  ingressControllerNamespace: ingress-nginx
 
 # -----------------------------------------------------------------------------
 # Global values — passed to all subcharts automatically by Helm

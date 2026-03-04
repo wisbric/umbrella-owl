@@ -230,12 +230,13 @@ backup:
   retentionDays: 30
   databases:
     - nightowl
-    - keycloak
     - keep
     - outline
+    # keycloak runs on external DB in production; back it up with provider-native tooling.
 
 # -----------------------------------------------------------------------------
 # Network Policies — Restrict pod-to-pod communication
 # -----------------------------------------------------------------------------
 networkPolicies:
   enabled: true
+  ingressControllerNamespace: ingress-nginx

@@ -3,6 +3,7 @@ NetworkPolicies — Restrict pod-to-pod communication to only necessary paths.
 Controlled by .Values.networkPolicies.enabled.
 */}}
 {{- if .Values.networkPolicies.enabled }}
+{{- $ingressControllerNamespace := .Values.networkPolicies.ingressControllerNamespace | default "ingress-nginx" }}
 # ── Owlstack API + Worker ────────────────────────────────────────────────────
 # Can reach: PostgreSQL, Redis, Keycloak, Keep API, Outline API, Zammad
 apiVersion: networking.k8s.io/v1
@@ -17,9 +18,12 @@ spec:
       app.kubernetes.io/name: owlstack
   policyTypes: ["Ingress", "Egress"]
   ingress:
-    # Allow ingress from nginx-ingress + other pods in namespace
+    # Allow ingress from same namespace + ingress controller namespace.
     - from:
-        - namespaceSelector: {}
+        - podSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $ingressControllerNamespace | quote }}
       ports:
         - port: 8080
           protocol: TCP

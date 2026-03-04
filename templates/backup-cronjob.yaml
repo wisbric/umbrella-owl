@@ -50,11 +50,20 @@ spec:
                   mkdir -p "$BACKUP_DIR"
 
                   echo "=== Starting backup at $DATE ==="
+                  if ! psql -lqt >/dev/null 2>&1; then
+                    echo "ERROR: cannot connect to PostgreSQL at ${PGHOST}:${PGPORT}"
+                    exit 1
+                  fi
+                  DB_LIST="$(psql -lqt | cut -d '|' -f 1 | tr -d ' ')"
 
                   {{- range .Values.backup.databases }}
-                  echo "Dumping {{ . }} ..."
-                  pg_dump -Fc -f "$BACKUP_DIR/{{ . }}.dump" -d "{{ . }}" 2>&1
-                  echo "  {{ . }}: $(du -h "$BACKUP_DIR/{{ . }}.dump" | cut -f1)"
+                  if echo "$DB_LIST" | grep -Fxq "{{ . }}"; then
+                    echo "Dumping {{ . }} ..."
+                    pg_dump -Fc -f "$BACKUP_DIR/{{ . }}.dump" -d "{{ . }}" 2>&1
+                    echo "  {{ . }}: $(du -h "$BACKUP_DIR/{{ . }}.dump" | cut -f1)"
+                  else
+                    echo "Skipping {{ . }} (database not found on local PostgreSQL host)"
+                  fi
                   {{- end }}
 
                   echo "=== Backup complete ==="

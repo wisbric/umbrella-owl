@@ -115,11 +115,14 @@ helm upgrade owl . \
 
 ### Automated backups
 
-Daily at 2 AM via CronJob (`owl-backup`). Dumps all databases (nightowl, keycloak, keep, outline) in `pg_dump -Fc` format to a PVC.
+Daily at 2 AM via CronJob (`owl-backup`). Dumps configured in-cluster PostgreSQL databases in `pg_dump -Fc` format to a PVC.
 
 ```bash
-# Check recent backups
-kubectl exec -n owl deploy/owl-postgresql -- ls -la /backups/
+# Check recent backup jobs
+kubectl get jobs -n owl -l app.kubernetes.io/component=backup
+
+# Inspect logs for a completed backup job
+kubectl logs -n owl job/<recent-backup-job>
 
 # Trigger manual backup
 kubectl create job --from=cronjob/owl-backup manual-backup-$(date +%s) -n owl
