@@ -17,6 +17,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout owlstack (for local chart dependency)
+        uses: actions/checkout@v4
+        with:
+          repository: wisbric/owlstack
+          path: ../owlstack
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
