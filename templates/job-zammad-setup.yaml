@@ -73,6 +73,14 @@ spec:
                 --set owlstack_token="$ZAMMAD_OWLSTACK_TOKEN" \
                 -f /scripts/setup.sql
 
+              # ---------------------------------------------------------------
+              # Mark Zammad setup as complete (skip Getting Started wizard)
+              # ---------------------------------------------------------------
+              echo "Marking Zammad setup as complete..."
+              psql -c "UPDATE settings SET state_current = '--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess
+              value: true
+              ' WHERE name = 'system_init_done' AND state_current NOT LIKE '%value: true%';"
+
               echo "Zammad setup complete."
           env:
             - name: PGHOST
