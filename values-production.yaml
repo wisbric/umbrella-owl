@@ -219,3 +219,23 @@ garage:
       size: 5Gi
     data:
       size: 100Gi
+
+# -----------------------------------------------------------------------------
+# Backup — Daily PostgreSQL backups
+# -----------------------------------------------------------------------------
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  storageSize: 20Gi
+  retentionDays: 30
+  databases:
+    - nightowl
+    - keycloak
+    - keep
+    - outline
+
+# -----------------------------------------------------------------------------
+# Network Policies — Restrict pod-to-pod communication
+# -----------------------------------------------------------------------------
+networkPolicies:
+  enabled: true

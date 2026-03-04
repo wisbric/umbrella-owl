@@ -488,3 +488,24 @@ garage:
     data:
       storageClass: longhorn
       size: 10Gi
+
+# -----------------------------------------------------------------------------
+# Backup — Daily PostgreSQL backups
+# -----------------------------------------------------------------------------
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  storageClass: longhorn
+  storageSize: 5Gi
+  retentionDays: 7
+  databases:
+    - nightowl
+    - keycloak
+    - keep
+    - outline
+
+# -----------------------------------------------------------------------------
+# Network Policies — disabled in lab for easier debugging; enable in prod
+# -----------------------------------------------------------------------------
+networkPolicies:
+  enabled: false

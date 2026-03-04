@@ -369,6 +369,27 @@ garage:
       size: 10Gi
 
 # -----------------------------------------------------------------------------
+# Backup — Automated PostgreSQL backups via CronJob
+# -----------------------------------------------------------------------------
+backup:
+  enabled: false
+  schedule: "0 2 * * *"          # Daily at 2 AM
+  storageClass: longhorn
+  storageSize: 5Gi
+  retentionDays: 7
+  databases:
+    - nightowl
+    - keycloak
+    - keep
+    - outline
+
+# -----------------------------------------------------------------------------
+# Network Policies — Restrict pod-to-pod communication
+# -----------------------------------------------------------------------------
+networkPolicies:
+  enabled: false
+
+# -----------------------------------------------------------------------------
 # Global values — passed to all subcharts automatically by Helm
 # -----------------------------------------------------------------------------
 global:

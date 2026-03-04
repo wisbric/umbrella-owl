@@ -1,0 +1,313 @@
+{{/*
+NetworkPolicies — Restrict pod-to-pod communication to only necessary paths.
+Controlled by .Values.networkPolicies.enabled.
+*/}}
+{{- if .Values.networkPolicies.enabled }}
+# ── Owlstack API + Worker ────────────────────────────────────────────────────
+# Can reach: PostgreSQL, Redis, Keycloak, Keep API, Outline API, Zammad
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-owlstack
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: owlstack
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    # Allow ingress from nginx-ingress + other pods in namespace
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - port: 5432
+          protocol: TCP
+    # Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    # Keycloak (OIDC discovery)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - port: 8080
+          protocol: TCP
+    # Zammad
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zammad
+      ports:
+        - port: 8080
+          protocol: TCP
+    # DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # External (Outline API, Keep API, external webhooks)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+---
+# ── PostgreSQL ────────────────────────────────────────────────────────────────
+# Accepts connections only from owlstack, keep, outline, keycloak, zammad
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-postgresql
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: owlstack
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zammad
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keep
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: outline
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: backup
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+# ── Redis ─────────────────────────────────────────────────────────────────────
+# Accepts connections only from owlstack, keep, outline
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-redis
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: owlstack
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keep
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: outline
+      ports:
+        - port: 6379
+          protocol: TCP
+---
+# ── Keep ──────────────────────────────────────────────────────────────────────
+# Keep backend can reach: PostgreSQL, Redis, external APIs
+# Ingress from oauth2-proxy and owlstack webhooks
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-keep
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: keep
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP
+        - port: 3000
+          protocol: TCP
+        - port: 6001
+          protocol: TCP
+  egress:
+    # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - port: 5432
+          protocol: TCP
+    # Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    # DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # External (NightOwl webhook callback, monitoring sources)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+---
+# ── Outline ───────────────────────────────────────────────────────────────────
+# Outline can reach: PostgreSQL, Redis, Garage (S3), Keycloak (OIDC)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-outline
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: outline
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 3000
+          protocol: TCP
+  egress:
+    # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - port: 5432
+          protocol: TCP
+    # Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    # Garage (S3)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage
+      ports:
+        - port: 3900
+          protocol: TCP
+    # Keycloak (OIDC)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - port: 8080
+          protocol: TCP
+    # DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # External (SMTP, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+---
+# ── Keycloak ──────────────────────────────────────────────────────────────────
+# Keycloak can reach: PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-keycloak
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - port: 5432
+          protocol: TCP
+    # DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+{{- end }}
