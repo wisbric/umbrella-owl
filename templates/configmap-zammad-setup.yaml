@@ -11,7 +11,7 @@ metadata:
   labels:
     {{- include "umbrella-owl.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "-5"
     "helm.sh/hook-delete-policy": before-hook-creation
 data:
@@ -30,16 +30,16 @@ data:
     BEGIN;
 
     -- 1. Create owlstack-service user (if not exists)
+    -- Note: password left empty — this user authenticates via API token only.
     INSERT INTO users (
       login, firstname, lastname, email,
-      password, active, verified, role_ids,
+      password, active, verified,
       updated_by_id, created_by_id,
       created_at, updated_at
     )
     SELECT
       'owlstack-service', 'Owlstack', 'Service', 'owlstack-service@wisbric.local',
-      '{sha2}' || encode(digest('OwlstackService2026!', 'sha256'), 'hex'),
-      true, true, ARRAY[]::integer[],
+      '', true, true,
       1, 1,
       NOW(), NOW()
     WHERE NOT EXISTS (
@@ -73,12 +73,12 @@ data:
         WHERE t.user_id = u.id AND t.name = 'Owlstack Integration'
       );
 
-    -- 4. Create groups
-    INSERT INTO groups (name, active, created_at, updated_at, updated_by_id, created_by_id)
-    SELECT name, true, NOW(), NOW(), 1, 1
+    -- 4. Create groups (name_last = name for top-level groups)
+    INSERT INTO groups (name, name_last, active, created_at, updated_at, updated_by_id, created_by_id)
+    SELECT name, name, true, NOW(), NOW(), 1, 1
     FROM (VALUES ('Support'), ('Engineering'), ('Billing')) AS g(name)
     WHERE NOT EXISTS (
-      SELECT 1 FROM groups WHERE groups.name = g.name
+      SELECT 1 FROM groups WHERE lower(groups.name) = lower(g.name)
     );
 
     -- 5. Create organizations
