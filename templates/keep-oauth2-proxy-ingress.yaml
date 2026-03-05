@@ -41,3 +41,46 @@ spec:
     {{- toYaml .Values.keep.ingressTls | nindent 4 }}
   {{- end }}
 {{- end }}
+---
+{{/*
+Ingress for Keep backend API via nginx auth_request.
+Routes /backend/* directly to the Keep backend service, bypassing the frontend
+proxy. nginx validates the oauth2-proxy cookie via auth_request and forwards
+identity headers (X-Auth-Request-Email, X-Forwarded-Email) to the backend.
+This fixes 403 errors caused by the frontend dropping auth headers when proxying.
+*/}}
+{{- if and .Values.keep.enabled .Values.keep.oauth2Proxy.enabled .Values.keep.oauth2Proxy.hostname }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-keep-backend
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keep-backend
+  annotations:
+    {{- with .Values.keep.ingressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/auth-url: "http://{{ .Release.Name }}-keep-oauth2-proxy.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://{{ .Values.keep.oauth2Proxy.hostname }}/oauth2/start?rd=$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Forwarded-Email,X-Forwarded-User,X-Forwarded-Preferred-Username"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.keep.oauth2Proxy.hostname }}
+      http:
+        paths:
+          - path: /backend(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ .Release.Name }}-keep-backend
+                port:
+                  number: 8080
+  {{- if .Values.keep.ingressTls }}
+  tls:
+    {{- toYaml .Values.keep.ingressTls | nindent 4 }}
+  {{- end }}
+{{- end }}
