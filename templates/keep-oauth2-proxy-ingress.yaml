@@ -65,14 +65,16 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/auth-url: "http://{{ .Release.Name }}-keep-oauth2-proxy.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/auth"
     nginx.ingress.kubernetes.io/auth-signin: "https://{{ .Values.keep.oauth2Proxy.hostname }}/oauth2/start?rd=$escaped_request_uri"
-    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Groups"
     nginx.ingress.kubernetes.io/configuration-snippet: |
-      # oauth2-proxy auth endpoint only returns X-Auth-Request-Email, not
-      # X-Forwarded-Email. Keep's backend expects X-Forwarded-Email, so copy it.
+      # Keep's oauth2proxy auth verifier expects both x-forwarded-email and
+      # x-forwarded-groups headers.
       auth_request_set $name_email $upstream_http_x_auth_request_email;
       auth_request_set $name_user  $upstream_http_x_auth_request_user;
+      auth_request_set $name_groups $upstream_http_x_auth_request_groups;
       proxy_set_header X-Forwarded-Email              $name_email;
       proxy_set_header X-Forwarded-User               $name_user;
+      proxy_set_header X-Forwarded-Groups             $name_groups;
       proxy_set_header X-Forwarded-Preferred-Username  $name_user;
       # Strip the NextAuth Bearer token — backend should auth via headers only
       proxy_set_header Authorization "";

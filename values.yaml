@@ -265,6 +265,12 @@ keep:
     env:
       - name: AUTH_TYPE
         value: OAUTH2PROXY
+      - name: KEEP_OAUTH2_PROXY_ADMIN_ROLES
+        value: "admin,admins"
+      - name: KEEP_OAUTH2_PROXY_NOC_ROLES
+        value: "noc,member,members"
+      - name: KEEP_OAUTH2_PROXY_WEBHOOK_ROLES
+        value: "webhook"
       - name: SECRET_MANAGER_TYPE
         value: k8s
       - name: PORT
