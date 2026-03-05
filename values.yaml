@@ -33,14 +33,14 @@ owlstack:
     worker: 1
 
   image:
-    repository: ghcr.io/wisbric/owlstack
+    repository: ghcr.io/wisbric/owlstack-api
     pullPolicy: IfNotPresent
     tag: ""
 
   frontend:
     enabled: true
     image:
-      repository: ghcr.io/wisbric/owlstack-web
+      repository: ghcr.io/wisbric/owlstack-frontend
       pullPolicy: IfNotPresent
       tag: ""
     replicas: 1
