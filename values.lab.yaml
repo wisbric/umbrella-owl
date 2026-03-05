@@ -89,6 +89,8 @@ owlstack:
     zammadUrl: "http://owl-zammad:8080"
     workerPollSeconds: "60"
     outlineUrl: "https://outline.devops.lab"
+    outlineRunbookCollection: "Runbooks"
+    outlinePostMortemCollection: "Post Mortems"
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml

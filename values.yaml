@@ -81,6 +81,8 @@ owlstack:
     workerPollSeconds: "60"
     zammadUrl: ""
     outlineUrl: ""
+    outlineRunbookCollection: ""
+    outlinePostMortemCollection: ""
 
   secrets:
     create: true

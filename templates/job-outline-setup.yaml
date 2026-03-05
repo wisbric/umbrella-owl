@@ -1,0 +1,114 @@
+{{/*
+Outline post-install setup — Job that runs idempotent SQL against Outline's
+PostgreSQL database to create an API key for the Owlstack integration.
+Runs after Zammad setup (hook-weight: 12).
+*/}}
+{{- if and .Values.outline.enabled .Values.owlstack.secrets.outlineApiToken }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-outline-setup
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "12"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: outline-setup
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: setup
+          image: postgres:18-alpine
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+
+              # ---------------------------------------------------------------
+              # Wait for Outline's PostgreSQL database to be ready
+              # ---------------------------------------------------------------
+              echo "Waiting for Outline database ..."
+              ATTEMPTS=0
+              until psql "$DATABASE_URL" -c "SELECT 1" >/dev/null 2>&1; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ "$ATTEMPTS" -ge 60 ]; then
+                  echo "ERROR: Outline database not ready after 5 minutes"
+                  exit 1
+                fi
+                echo "  Not ready yet (attempt $ATTEMPTS/60), retrying in 5s..."
+                sleep 5
+              done
+              echo "Database is ready."
+
+              # ---------------------------------------------------------------
+              # Wait for Outline to have completed its own migrations
+              # (check that the 'users' table exists)
+              # ---------------------------------------------------------------
+              echo "Waiting for Outline schema (users table) ..."
+              ATTEMPTS=0
+              until psql "$DATABASE_URL" -c "SELECT 1 FROM users LIMIT 0" >/dev/null 2>&1; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ "$ATTEMPTS" -ge 60 ]; then
+                  echo "ERROR: Outline schema not ready after 5 minutes"
+                  exit 1
+                fi
+                echo "  Schema not ready yet (attempt $ATTEMPTS/60), retrying in 5s..."
+                sleep 5
+              done
+              echo "Outline schema is ready."
+
+              # ---------------------------------------------------------------
+              # Wait for at least one admin user to exist
+              # (created on first OIDC login)
+              # ---------------------------------------------------------------
+              echo "Waiting for an admin user in Outline ..."
+              ATTEMPTS=0
+              until psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE \"isAdmin\" = true" 2>/dev/null | grep -qv '^0$'; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ "$ATTEMPTS" -ge 120 ]; then
+                  echo "ERROR: No admin user after 10 minutes. Log in to Outline first."
+                  exit 1
+                fi
+                echo "  No admin user yet (attempt $ATTEMPTS/120), retrying in 5s..."
+                sleep 5
+              done
+              echo "Admin user exists."
+
+              # ---------------------------------------------------------------
+              # Run the idempotent setup SQL
+              # ---------------------------------------------------------------
+              echo "Running Outline setup SQL..."
+              psql "$DATABASE_URL" \
+                --set api_token="$OUTLINE_API_TOKEN" \
+                -f /scripts/setup.sql
+
+              echo "Outline setup complete."
+          env:
+            - name: DATABASE_URL
+              value: {{ .Values.outline.secrets.databaseUrl | quote }}
+            - name: OUTLINE_API_TOKEN
+              value: {{ .Values.owlstack.secrets.outlineApiToken | quote }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ .Release.Name }}-outline-setup
+{{- end }}

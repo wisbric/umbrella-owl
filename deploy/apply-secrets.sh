@@ -62,6 +62,9 @@ KEYCLOAK_ADMIN_PW=$(rand_password)
 # Zammad token for Owlstack integration
 ZAMMAD_OWLSTACK_TOKEN=$(rand_hex 32)
 
+# Outline API token for Owlstack integration
+OUTLINE_API_TOKEN=$(rand_hex 32)
+
 # Keep secrets
 KEEP_NEXTAUTH_SECRET=$(rand_hex 32)
 KEEP_OIDC_SECRET=$(rand_password)
@@ -113,6 +116,7 @@ owlstack:
     sessionSecret: "${OWLSTACK_SESSION_SECRET}"
     encryptionKey: "${OWLSTACK_ENCRYPTION_KEY}"
     zammadToken: "${ZAMMAD_OWLSTACK_TOKEN}"
+    outlineApiToken: "${OUTLINE_API_TOKEN}"
 
 # -----------------------------------------------------------------------------
 # PostgreSQL
@@ -247,6 +251,9 @@ KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PW}
 # Zammad
 ZAMMAD_OWLSTACK_TOKEN=${ZAMMAD_OWLSTACK_TOKEN}
 ZAMMAD_DB_PASSWORD=${ZAMMAD_DB_PW}
+
+# Outline API Token (Owlstack integration)
+OUTLINE_API_TOKEN=${OUTLINE_API_TOKEN}
 
 # Keep
 KEEP_DB_PASSWORD=${KEEP_DB_PW}
