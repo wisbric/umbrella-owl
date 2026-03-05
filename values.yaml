@@ -288,6 +288,12 @@ keep:
     envFromSecret: keep-secrets
   frontend:
     env:
+      - name: AUTH_TYPE
+        value: OAUTH2PROXY
+      - name: KEEP_OAUTH2_PROXY_USER_HEADER
+        value: x-forwarded-email
+      - name: KEEP_OAUTH2_PROXY_ROLE_HEADER
+        value: x-forwarded-groups
       - name: NEXTAUTH_SECRET
         value: "changeme"
       - name: VERCEL
