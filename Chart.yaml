@@ -17,7 +17,7 @@ keywords:
 dependencies:
   # -- Owl applications (OCI from GHCR)
   - name: owlstack
-    version: "0.3.0"
+    version: "0.3.1"
     repository: "file://../owlstack/deploy/helm/owlstack"
 
   # -- Third-party dependencies (upstream registries)
