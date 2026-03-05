@@ -247,6 +247,7 @@ keep:
   secrets:
     databaseConnectionString: ""  # postgresql+psycopg2://keep:<pw>@owl-postgresql:5432/keep
     nextauthSecret: ""
+    keepApiKey: ""                  # API key for Vector → Keep alert ingestion
   # oauth2-proxy sidecar for SSO (templates/keep-oauth2-proxy.yaml)
   oauth2Proxy:
     enabled: true
@@ -367,6 +368,18 @@ garage:
       size: 1Gi
     data:
       size: 10Gi
+
+# -----------------------------------------------------------------------------
+# Vector (vector.dev) — Log/metric pipeline for alert ingestion into Keep
+# Chart: https://helm.vector.dev
+# Set enabled: true to deploy Vector for synthetic/real alert forwarding
+# -----------------------------------------------------------------------------
+vector:
+  enabled: false
+  role: Agent
+  # Agent role has no inbound ports — disable the Service
+  service:
+    enabled: false
 
 # -----------------------------------------------------------------------------
 # Backup — Automated PostgreSQL backups via CronJob

@@ -2,8 +2,8 @@ apiVersion: v2
 name: umbrella-owl
 description: Umbrella Helm chart for the Wisbric owl ecosystem
 type: application
-version: 0.4.0
-appVersion: "0.4.0"
+version: 0.5.0
+appVersion: "0.5.0"
 maintainers:
   - name: Wisbric
     url: https://wisbric.com
@@ -55,3 +55,9 @@ dependencies:
     version: "2.1.0"
     repository: https://charts.derwitt.dev
     condition: garage.enabled
+
+  # -- Vector (vector.dev) — Log/metric pipeline for alert ingestion into Keep
+  - name: vector
+    version: "0.50.0"
+    repository: https://helm.vector.dev
+    condition: vector.enabled

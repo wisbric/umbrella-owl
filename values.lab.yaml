@@ -493,6 +493,67 @@ garage:
       size: 5Gi
 
 # -----------------------------------------------------------------------------
+# Vector — Synthetic alert pipeline into Keep
+# -----------------------------------------------------------------------------
+vector:
+  enabled: true
+  role: Agent
+  service:
+    enabled: false
+  customConfig:
+    data_dir: /vector-data-dir
+    sources:
+      demo_alerts:
+        type: demo_logs
+        format: shuffle
+        interval: 300
+        lines:
+          - '{"alert":"HighCPU","severity":"warning","service":"payment-gateway","message":"CPU usage above 85%"}'
+          - '{"alert":"DiskPressure","severity":"critical","service":"customer-db","message":"Disk usage at 92%"}'
+          - '{"alert":"PodRestart","severity":"warning","service":"auth-service","message":"Pod restarted 3 times in 10m"}'
+          - '{"alert":"HighLatency","severity":"warning","service":"order-api","message":"P99 latency above 500ms"}'
+          - '{"alert":"SSLExpiry","severity":"critical","service":"ingress-controller","message":"TLS cert expires in 7 days"}'
+    transforms:
+      keep_format:
+        type: remap
+        inputs: ["demo_alerts"]
+        source: |
+          parsed, err = parse_json(.message)
+          if err == null {
+            del(.host)
+            del(.message)
+            del(.service)
+            del(.source_type)
+            del(.timestamp)
+            .name = string!(parsed.alert)
+            .severity = string!(parsed.severity)
+            .description = string!(parsed.message)
+            .service = string!(parsed.service)
+            .source = ["vector"]
+          }
+    sinks:
+      keep_alerts:
+        type: http
+        inputs: ["keep_format"]
+        uri: "http://owl-keep-backend:8080/alerts/event"
+        method: post
+        encoding:
+          codec: json
+        batch:
+          max_events: 1
+        request:
+          headers:
+            X-API-KEY: "${KEEP_API_KEY}"
+            Content-Type: "application/json"
+  env:
+    - name: KEEP_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: keep-secrets
+          key: KEEP_API_KEY
+          optional: false
+
+# -----------------------------------------------------------------------------
 # Backup — Daily PostgreSQL backups
 # -----------------------------------------------------------------------------
 backup:

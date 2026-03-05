@@ -45,6 +45,7 @@ jobs:
           helm repo add keephq https://keephq.github.io/helm-charts
           helm repo add lrstanley https://helm.liam.sh
           helm repo add derwitt https://charts.derwitt.dev
+          helm repo add vector https://helm.vector.dev
           helm repo update
 
       # ---------------------------------------------------------------
@@ -98,6 +99,7 @@ jobs:
             secrets:
               databaseConnectionString: "postgresql+psycopg2://stub:stub@localhost/keep"
               nextauthSecret: "stub"
+              keepApiKey: "stub"
             oauth2Proxy:
               cookieSecret: "stub"
           outline:

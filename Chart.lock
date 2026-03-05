@@ -23,5 +23,8 @@ dependencies:
 - name: garage
   repository: https://charts.derwitt.dev
   version: 2.1.0
-digest: sha256:a31df2ab336bc713b5f84f6ef38ed21de3bf91e89e532c60b34256bdd0e3b15d
-generated: "2026-03-04T12:20:48.22410808+13:00"
+- name: vector
+  repository: https://helm.vector.dev
+  version: 0.50.0
+digest: sha256:2de6befea21ff52e9e378a5fd6afd3ae963e5dcd1ddb0c3ba4de3d6202e41e1e
+generated: "2026-03-05T08:17:45.16491519+13:00"
