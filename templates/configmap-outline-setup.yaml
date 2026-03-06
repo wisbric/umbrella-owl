@@ -28,7 +28,7 @@ data:
     -- Insert API key for owlstack-integration (idempotent).
     -- Outline validates tokens against the 'secret' column (plaintext)
     -- or the 'hash' column (bcrypt). We store both for compatibility.
-    INSERT INTO api_keys (id, name, secret, hash, "last4", "userId", "createdAt", "updatedAt")
+    INSERT INTO "apiKeys" (id, name, secret, hash, "last4", "userId", "createdAt", "updatedAt")
     SELECT
       gen_random_uuid(),
       'owlstack-integration',
@@ -39,9 +39,9 @@ data:
       now(),
       now()
     FROM users u
-    WHERE u."isAdmin" = true
+    WHERE u.role = 'admin'
       AND NOT EXISTS (
-        SELECT 1 FROM api_keys WHERE name = 'owlstack-integration' AND "deletedAt" IS NULL
+        SELECT 1 FROM "apiKeys" WHERE name = 'owlstack-integration' AND "deletedAt" IS NULL
       )
     LIMIT 1;
 {{- end }}

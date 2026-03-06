@@ -69,7 +69,7 @@ spec:
               # Continue only if at least one admin user exists.
               # Outline creates users lazily on first successful OIDC login.
               # ---------------------------------------------------------------
-              ADMIN_COUNT="$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE \"isAdmin\" = true" 2>/dev/null | tr -d '[:space:]')"
+              ADMIN_COUNT="$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE role = 'admin'" 2>/dev/null | tr -d '[:space:]')"
               if [ -z "$ADMIN_COUNT" ]; then
                 ADMIN_COUNT=0
               fi

@@ -59,7 +59,7 @@ spec:
                   done
 
                   # Wait for first OIDC admin login
-                  ADMIN_COUNT="$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE \"isAdmin\" = true" 2>/dev/null | tr -d '[:space:]')"
+                  ADMIN_COUNT="$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE role = 'admin'" 2>/dev/null | tr -d '[:space:]')"
                   if [ -z "$ADMIN_COUNT" ] || [ "$ADMIN_COUNT" = "0" ]; then
                     echo "No Outline admin user yet; nothing to do."
                     exit 0
