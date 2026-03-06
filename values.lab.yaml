@@ -89,6 +89,7 @@ owlstack:
     zammadUrl: "http://owl-zammad:8080"
     workerPollSeconds: "60"
     outlineUrl: "https://outline.devops.lab"
+    webhookTenant: "acme"
     outlineRunbookCollection: "Runbooks"
     outlinePostMortemCollection: "Post Mortems"
 
@@ -616,7 +617,7 @@ vector:
       valueFrom:
         secretKeyRef:
           name: owl-owlstack
-          key: NIGHTOWL_WEBHOOK_KEY
+          key: OWLSTACK_WEBHOOK_KEY
           optional: false
 
 # -----------------------------------------------------------------------------
