@@ -535,21 +535,25 @@ vector:
         type: filter
         inputs: ["kubernetes_logs"]
         condition: |
-          (to_string(.kubernetes.namespace_name) ?? "") == "owl"
-      exclude_feedback_loops:
+          (to_string(.kubernetes.pod_namespace) ?? "") == "owl"
+      exclude_infra_noise:
         type: filter
         inputs: ["owl_namespace_only"]
         condition: |
           !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-vector") &&
           !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-keep-backend") &&
-          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-keep-frontend")
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-keep-frontend") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-postgresql") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-redis") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-elasticsearch") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-owlstack")
       classify_severity:
         type: remap
-        inputs: ["exclude_feedback_loops"]
+        inputs: ["exclude_infra_noise"]
         source: |
           message = to_string(.message) ?? ""
           message_lc = downcase(message)
-          namespace = to_string(.kubernetes.namespace_name) ?? "unknown"
+          namespace = to_string(.kubernetes.pod_namespace) ?? "unknown"
           pod = to_string(.kubernetes.pod_name) ?? "unknown"
           container = to_string(.kubernetes.container_name) ?? "unknown"
 
@@ -586,12 +590,32 @@ vector:
           headers:
             X-API-KEY: "${KEEP_API_KEY}"
             Content-Type: "application/json"
+      nightowl_alerts:
+        type: http
+        inputs: ["keep_signals_only"]
+        uri: "http://owl-owlstack:80/api/v1/webhooks/keep"
+        method: post
+        encoding:
+          codec: json
+          only_fields: ["name", "severity", "description", "source", "service"]
+        batch:
+          max_events: 1
+        request:
+          headers:
+            X-API-Key: "${NIGHTOWL_API_KEY}"
+            Content-Type: "application/json"
   env:
     - name: KEEP_API_KEY
       valueFrom:
         secretKeyRef:
           name: keep-secrets
           key: KEEP_API_KEY
+          optional: false
+    - name: NIGHTOWL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: owl-owlstack
+          key: NIGHTOWL_WEBHOOK_KEY
           optional: false
 
 # -----------------------------------------------------------------------------
