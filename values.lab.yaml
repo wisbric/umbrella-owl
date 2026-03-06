@@ -518,7 +518,7 @@ garage:
       size: 5Gi
 
 # -----------------------------------------------------------------------------
-# Vector — Synthetic alert pipeline into Keep
+# Vector — Real Kubernetes log pipeline into Keep
 # -----------------------------------------------------------------------------
 vector:
   enabled: true
@@ -528,38 +528,54 @@ vector:
   customConfig:
     data_dir: /vector-data-dir
     sources:
-      demo_alerts:
-        type: demo_logs
-        format: shuffle
-        interval: 300
-        lines:
-          - '{"alert":"HighCPU","severity":"warning","service":"payment-gateway","message":"CPU usage above 85%"}'
-          - '{"alert":"DiskPressure","severity":"critical","service":"customer-db","message":"Disk usage at 92%"}'
-          - '{"alert":"PodRestart","severity":"warning","service":"auth-service","message":"Pod restarted 3 times in 10m"}'
-          - '{"alert":"HighLatency","severity":"warning","service":"order-api","message":"P99 latency above 500ms"}'
-          - '{"alert":"SSLExpiry","severity":"critical","service":"ingress-controller","message":"TLS cert expires in 7 days"}'
+      kubernetes_logs:
+        type: kubernetes_logs
     transforms:
-      keep_format:
+      owl_namespace_only:
+        type: filter
+        inputs: ["kubernetes_logs"]
+        condition: |
+          (to_string(.kubernetes.namespace_name) ?? "") == "owl"
+      exclude_feedback_loops:
+        type: filter
+        inputs: ["owl_namespace_only"]
+        condition: |
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-vector") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-keep-backend") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-keep-frontend")
+      classify_severity:
         type: remap
-        inputs: ["demo_alerts"]
+        inputs: ["exclude_feedback_loops"]
         source: |
-          parsed, err = parse_json(.message)
-          if err == null {
-            del(.host)
-            del(.message)
-            del(.service)
-            del(.source_type)
-            del(.timestamp)
-            .name = string!(parsed.alert)
-            .severity = string!(parsed.severity)
-            .description = string!(parsed.message)
-            .service = string!(parsed.service)
-            .source = ["vector"]
+          message = to_string(.message) ?? ""
+          message_lc = downcase(message)
+          namespace = to_string(.kubernetes.namespace_name) ?? "unknown"
+          pod = to_string(.kubernetes.pod_name) ?? "unknown"
+          container = to_string(.kubernetes.container_name) ?? "unknown"
+
+          severity = "info"
+          if contains(message_lc, "panic") || contains(message_lc, "fatal") || contains(message_lc, "critical") {
+            severity = "critical"
+          } else if contains(message_lc, "error") || contains(message_lc, "exception") || contains(message_lc, "failed") {
+            severity = "high"
+          } else if contains(message_lc, "warn") {
+            severity = "warning"
           }
+
+          .name = "K8sLog/" + container
+          .severity = severity
+          .service = container
+          .description = format!("[{}:{}] {}", namespace, pod, message)
+          .source = ["vector", "kubernetes_logs"]
+      keep_signals_only:
+        type: filter
+        inputs: ["classify_severity"]
+        condition: |
+          .severity == "high" || .severity == "critical"
     sinks:
       keep_alerts:
         type: http
-        inputs: ["keep_format"]
+        inputs: ["keep_signals_only"]
         uri: "http://owl-keep-backend:8080/alerts/event"
         method: post
         encoding:

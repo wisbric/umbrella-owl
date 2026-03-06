@@ -409,7 +409,7 @@ garage:
 # -----------------------------------------------------------------------------
 # Vector (vector.dev) — Log/metric pipeline for alert ingestion into Keep
 # Chart: https://helm.vector.dev
-# Set enabled: true to deploy Vector for synthetic/real alert forwarding
+# Set enabled: true to deploy Vector for real alert forwarding
 # -----------------------------------------------------------------------------
 vector:
   enabled: false
