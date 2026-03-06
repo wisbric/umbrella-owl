@@ -565,7 +565,7 @@ vector:
           .name = "K8sLog/" + container
           .severity = severity
           .service = container
-          .description = format!("[{}:{}] {}", namespace, pod, message)
+          .description = "[" + namespace + ":" + pod + "] " + message
           .source = ["vector", "kubernetes_logs"]
       keep_signals_only:
         type: filter
