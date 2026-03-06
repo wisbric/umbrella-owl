@@ -546,7 +546,8 @@ vector:
           !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-postgresql") &&
           !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-redis") &&
           !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-elasticsearch") &&
-          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-owlstack")
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-owlstack") &&
+          !starts_with(to_string(.kubernetes.pod_name) ?? "", "owl-garage")
       classify_severity:
         type: remap
         inputs: ["exclude_infra_noise"]
