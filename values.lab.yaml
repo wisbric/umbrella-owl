@@ -92,6 +92,7 @@ owlstack:
     webhookTenant: "acme"
     outlineRunbookCollection: "Runbooks"
     outlinePostMortemCollection: "Post Mortems"
+    keepUrl: "http://owl-keep-backend:8080"
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
