@@ -117,6 +117,31 @@ Check all three components together:
 2. Validate Owlstack has `outlineUrl` and API token values
 3. Ticket document search/link should fail gracefully if Outline is unavailable
 
+### Outline API token bootstrap (first-login flow)
+
+The chart now uses a fail-soft + retry strategy:
+
+1. Hook Job (`owl-outline-setup`) runs on install/upgrade and exits successfully if no Outline admin exists yet.
+2. Retry CronJob (`owl-outline-setup-retry`) runs on schedule and applies setup SQL idempotently.
+3. After first OIDC login creates an Outline admin user, the next CronJob run inserts/ensures the API token automatically.
+
+Verification:
+
+```bash
+# Check one-shot hook result (non-blocking)
+kubectl get jobs -n owl | rg outline-setup
+
+# Check retry CronJob is present and scheduled
+kubectl get cronjob owl-outline-setup-retry -n owl
+
+# Trigger immediate retry run (optional)
+kubectl create job --from=cronjob/owl-outline-setup-retry \
+  manual-outline-setup-$(date +%s) -n owl
+
+# Inspect retry logs
+kubectl logs -n owl job/<manual-job-name>
+```
+
 ## Common Ops Tasks
 
 ### Restart Owlstack after new images are pushed

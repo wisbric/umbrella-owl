@@ -483,6 +483,17 @@ outline:
   # OIDC token/userinfo calls use internal HTTP service to avoid TLS issues.
 
 # -----------------------------------------------------------------------------
+# Outline setup automation
+# -----------------------------------------------------------------------------
+outlineSetup:
+  hook:
+    enabled: true
+    failSoftNoAdmin: true
+  retryCron:
+    enabled: true
+    schedule: "*/2 * * * *"
+
+# -----------------------------------------------------------------------------
 # Garage — S3-compatible storage for Outline uploads
 # -----------------------------------------------------------------------------
 garage:

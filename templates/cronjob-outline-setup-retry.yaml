@@ -1,0 +1,89 @@
+{{/*
+Outline setup retry CronJob
+- Non-blocking: exits 0 when no Outline admin exists yet
+- Idempotent: reruns setup SQL safely until API key is present
+*/}}
+{{- if and .Values.outline.enabled .Values.owlstack.secrets.outlineApiToken (.Values.outlineSetup.retryCron.enabled | default true) }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-outline-setup-retry
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: outline-setup
+spec:
+  schedule: {{ .Values.outlineSetup.retryCron.schedule | default "*/10 * * * *" | quote }}
+  concurrencyPolicy: {{ .Values.outlineSetup.retryCron.concurrencyPolicy | default "Forbid" }}
+  successfulJobsHistoryLimit: {{ .Values.outlineSetup.retryCron.successfulJobsHistoryLimit | default 1 }}
+  failedJobsHistoryLimit: {{ .Values.outlineSetup.retryCron.failedJobsHistoryLimit | default 3 }}
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: outline-setup-retry
+            app.kubernetes.io/instance: {{ .Release.Name }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: setup-retry
+              image: postgres:18-alpine
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -e
+
+                  echo "Outline setup retry started."
+
+                  # Wait for Outline DB
+                  ATTEMPTS=0
+                  until psql "$DATABASE_URL" -c "SELECT 1" >/dev/null 2>&1; do
+                    ATTEMPTS=$((ATTEMPTS + 1))
+                    if [ "$ATTEMPTS" -ge 60 ]; then
+                      echo "Outline DB not ready; will retry on next schedule."
+                      exit 0
+                    fi
+                    sleep 5
+                  done
+
+                  # Wait for Outline schema
+                  ATTEMPTS=0
+                  until psql "$DATABASE_URL" -c "SELECT 1 FROM users LIMIT 0" >/dev/null 2>&1; do
+                    ATTEMPTS=$((ATTEMPTS + 1))
+                    if [ "$ATTEMPTS" -ge 60 ]; then
+                      echo "Outline schema not ready; will retry on next schedule."
+                      exit 0
+                    fi
+                    sleep 5
+                  done
+
+                  # Wait for first OIDC admin login
+                  ADMIN_COUNT="$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE \"isAdmin\" = true" 2>/dev/null | tr -d '[:space:]')"
+                  if [ -z "$ADMIN_COUNT" ] || [ "$ADMIN_COUNT" = "0" ]; then
+                    echo "No Outline admin user yet; nothing to do."
+                    exit 0
+                  fi
+
+                  echo "Admin user detected ($ADMIN_COUNT). Running setup SQL..."
+                  psql "$DATABASE_URL" \
+                    --set api_token="$OUTLINE_API_TOKEN" \
+                    -f /scripts/setup.sql
+
+                  echo "Outline setup retry completed."
+              env:
+                - name: DATABASE_URL
+                  value: {{ .Values.outline.secrets.databaseUrl | quote }}
+                - name: OUTLINE_API_TOKEN
+                  value: {{ .Values.owlstack.secrets.outlineApiToken | quote }}
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                {{- toYaml (.Values.outlineSetup.retryCron.resources | default dict) | nindent 16 }}
+          volumes:
+            - name: scripts
+              configMap:
+                name: {{ .Release.Name }}-outline-setup
+{{- end }}

@@ -55,6 +55,7 @@ Top-level keys map directly to subcharts or umbrella-only templates:
 
 - `owlstack`, `postgresql`, `redis`, `keycloak`, `zammad`, `keep`, `outline`, `garage`, `vector`
 - `registryCredentials` (shared GHCR pull secret)
+- `outlineSetup` (Outline API-token bootstrap hook + retry CronJob)
 - `backup` (umbrella templated CronJob)
 - `networkPolicies` (umbrella templated policies)
 
@@ -86,6 +87,8 @@ If Keep login loops or websocket errors occur, validate those ingress routes fir
 
 ## Operational Add-ons
 
+- `templates/job-outline-setup.yaml`: one-shot post-install/upgrade setup (fail-soft when no Outline admin exists yet)
+- `templates/cronjob-outline-setup-retry.yaml`: periodic idempotent retry; auto-completes setup after first Outline OIDC login
 - `templates/backup-cronjob.yaml`: daily `pg_dump` backups for configured databases
 - `templates/network-policies.yaml`: component-level traffic restrictions
 

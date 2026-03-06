@@ -3,7 +3,7 @@ Outline post-install setup — Job that runs idempotent SQL against Outline's
 PostgreSQL database to create an API key for the Owlstack integration.
 Runs after Zammad setup (hook-weight: 12).
 */}}
-{{- if and .Values.outline.enabled .Values.owlstack.secrets.outlineApiToken }}
+{{- if and .Values.outline.enabled .Values.owlstack.secrets.outlineApiToken (.Values.outlineSetup.hook.enabled | default true) }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -66,21 +66,22 @@ spec:
               echo "Outline schema is ready."
 
               # ---------------------------------------------------------------
-              # Wait for at least one admin user to exist
-              # (created on first OIDC login)
+              # Continue only if at least one admin user exists.
+              # Outline creates users lazily on first successful OIDC login.
               # ---------------------------------------------------------------
-              echo "Waiting for an admin user in Outline ..."
-              ATTEMPTS=0
-              until psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE \"isAdmin\" = true" 2>/dev/null | grep -qv '^0$'; do
-                ATTEMPTS=$((ATTEMPTS + 1))
-                if [ "$ATTEMPTS" -ge 120 ]; then
-                  echo "ERROR: No admin user after 10 minutes. Log in to Outline first."
-                  exit 1
+              ADMIN_COUNT="$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM users WHERE \"isAdmin\" = true" 2>/dev/null | tr -d '[:space:]')"
+              if [ -z "$ADMIN_COUNT" ]; then
+                ADMIN_COUNT=0
+              fi
+              if [ "$ADMIN_COUNT" = "0" ]; then
+                if [ "$OUTLINE_SETUP_FAIL_SOFT" = "true" ]; then
+                  echo "No admin user yet; exiting successfully (retry CronJob will run later)."
+                  exit 0
                 fi
-                echo "  No admin user yet (attempt $ATTEMPTS/120), retrying in 5s..."
-                sleep 5
-              done
-              echo "Admin user exists."
+                echo "ERROR: No admin user found in Outline. Log in once via OIDC, then rerun setup."
+                exit 1
+              fi
+              echo "Admin user exists: $ADMIN_COUNT"
 
               # ---------------------------------------------------------------
               # Run the idempotent setup SQL
@@ -96,6 +97,8 @@ spec:
               value: {{ .Values.outline.secrets.databaseUrl | quote }}
             - name: OUTLINE_API_TOKEN
               value: {{ .Values.owlstack.secrets.outlineApiToken | quote }}
+            - name: OUTLINE_SETUP_FAIL_SOFT
+              value: {{ ternary "true" "false" (.Values.outlineSetup.hook.failSoftNoAdmin | default true) | quote }}
           volumeMounts:
             - name: scripts
               mountPath: /scripts

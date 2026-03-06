@@ -363,6 +363,29 @@ outline:
     enabled: false
 
 # -----------------------------------------------------------------------------
+# Outline setup automation
+# - Hook job: runs on install/upgrade; can fail-soft when no admin user exists
+# - Retry CronJob: keeps retrying setup until first OIDC login creates admin user
+# -----------------------------------------------------------------------------
+outlineSetup:
+  hook:
+    enabled: true
+    failSoftNoAdmin: true
+  retryCron:
+    enabled: true
+    schedule: "*/10 * * * *"
+    concurrencyPolicy: Forbid
+    successfulJobsHistoryLimit: 1
+    failedJobsHistoryLimit: 3
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+# -----------------------------------------------------------------------------
 # Garage — S3-compatible storage for Outline uploads
 # Chart: https://charts.derwitt.dev
 # Set enabled: false to use an external S3-compatible store

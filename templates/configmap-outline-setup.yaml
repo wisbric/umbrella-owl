@@ -1,7 +1,8 @@
 {{/*
-Outline post-install setup — ConfigMap with idempotent SQL script.
-Creates an API key for the Owlstack integration directly in the
-Outline PostgreSQL database.
+Outline setup SQL script (idempotent).
+Used by both:
+- post-install/post-upgrade hook Job (one-shot)
+- retry CronJob (non-blocking, periodic)
 */}}
 {{- if and .Values.outline.enabled .Values.owlstack.secrets.outlineApiToken }}
 apiVersion: v1
@@ -10,10 +11,6 @@ metadata:
   name: {{ .Release.Name }}-outline-setup
   labels:
     {{- include "umbrella-owl.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": before-hook-creation
 data:
   setup.sql: |
     -- ================================================================
