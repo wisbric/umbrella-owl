@@ -34,7 +34,7 @@ owlstack:
 
   replicaCount:
     api: 1
-    worker: 1
+    worker: 2
 
   image:
     tag: main
@@ -232,6 +232,7 @@ keycloak:
       memory: 1Gi
   realmImport:
     enabled: true
+    includeSampleUsers: true
 
 # -----------------------------------------------------------------------------
 # Zammad — enabled for ticket management
@@ -329,7 +330,8 @@ keep:
     issuerUrl: "https://keycloak.devops.lab/realms/owls"
     hostname: keep.devops.lab
     cookieSecret: ""  # Set via values.lab-secrets.yaml
-    skipTlsVerify: true  # Lab uses self-signed certs
+    caBundleConfigMap: combined-ca-bundle
+    skipTlsVerify: false  # Trust lab Keycloak via combined CA bundle
   database:
     enabled: false
   backend:
