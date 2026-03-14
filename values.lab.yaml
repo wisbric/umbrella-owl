@@ -93,6 +93,18 @@ owlstack:
     outlineRunbookCollection: "Runbooks"
     outlinePostMortemCollection: "Post Mortems"
     keepUrl: "http://owl-keep-backend:8080"
+    mcpBackends: "keep=http://owl-mcp-keep:8082,k8s=http://owl-mcp-k8s:8083"
+
+  mcp:
+    enabled: true
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
 
   secrets:
     databaseUrl: ""       # Set via values.lab-secrets.yaml
@@ -644,3 +656,18 @@ backup:
 networkPolicies:
   enabled: false
   ingressControllerNamespace: ingress-nginx
+
+# -----------------------------------------------------------------------------
+# MCP Servers — AI agent integration (Model Context Protocol)
+# -----------------------------------------------------------------------------
+mcpServers:
+  kubernetes:
+    enabled: true
+    image: ghcr.io/containers/kubernetes-mcp-server:latest
+    readOnly: true
+  keep:
+    enabled: true
+    image: ghcr.io/wisbric/keep-mcp:main
+    keepUrl: "http://owl-keep-backend:8080"
+    secretName: keep-secrets
+    secretKey: KEEP_API_KEY
