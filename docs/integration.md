@@ -139,3 +139,26 @@ Values:
 | Keep | Keycloak | OIDC via oauth2-proxy | User auth |
 | Outline | Keycloak | OIDC | User auth |
 | Outline | Garage | S3 API | File uploads |
+
+## 8. MCP Servers (AI Agent Integration)
+
+The platform supports Model Context Protocol (MCP) servers for AI agent interaction.
+All MCP servers are optional and gated by `mcpServers.{service}.enabled`.
+
+| MCP Server | Image | Port | Purpose |
+|---|---|---|---|
+| owlstack-mcp | owlstack binary (`APP_MODE=mcp`) | 8081 | Owlstack tools (alerts, incidents, rosters, escalation, users) |
+| keep-mcp | `ghcr.io/wisbric/keep-mcp` | 8082 | Keep alert/incident management |
+| mcp-k8s | `ghcr.io/containers/kubernetes-mcp-server` | 8083 | K8s cluster read-only access |
+| mcp-postgres | Anthropic official | 3000 | PostgreSQL read-only SQL |
+
+### Owlstack MCP Gateway
+
+When `OWLSTACK_MCP_BACKENDS` is set (comma-separated `name=url` pairs), the owlstack MCP server
+also serves a gateway discovery endpoint at `/.well-known/mcp.json` listing all backend MCP servers,
+and a `/status` endpoint for backend health checking.
+
+Example config:
+```
+OWLSTACK_MCP_BACKENDS=keep=http://owl-mcp-keep:8082,k8s=http://owl-mcp-k8s:8083
+```
