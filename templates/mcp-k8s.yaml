@@ -69,9 +69,7 @@ spec:
         - name: mcp-k8s
           image: {{ .Values.mcpServers.kubernetes.image | default "ghcr.io/containers/kubernetes-mcp-server:latest" }}
           args:
-            - "--transport=http"
             - "--port=8083"
-            - "--namespace={{ .Release.Namespace }}"
             {{- if .Values.mcpServers.kubernetes.readOnly | default true }}
             - "--read-only"
             {{- end }}
