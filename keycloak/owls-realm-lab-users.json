@@ -1,0 +1,69 @@
+{
+  "ifResourceExists": "SKIP",
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Lab",
+      "lastName": "Admin",
+      "email": "admin@devops.lab",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": true
+        }
+      ],
+      "groups": ["admins"]
+    },
+    {
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Lab",
+      "lastName": "User",
+      "email": "user@devops.lab",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": true
+        }
+      ],
+      "groups": ["members"]
+    },
+    {
+      "username": "stefan",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Stefan",
+      "lastName": "Admin",
+      "email": "stefan@devops.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "devops",
+          "temporary": true
+        }
+      ],
+      "groups": ["admins"]
+    },
+    {
+      "username": "noah",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Noah",
+      "lastName": "Engineer",
+      "email": "noah@devops.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "devops",
+          "temporary": true
+        }
+      ],
+      "groups": ["members"]
+    }
+  ]
+}

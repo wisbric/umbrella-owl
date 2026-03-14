@@ -65,6 +65,11 @@ ZAMMAD_OWLSTACK_TOKEN=$(rand_hex 32)
 # Outline API token for Owlstack integration
 OUTLINE_API_TOKEN=$(rand_hex 32)
 
+# Webhook/API keys
+OWLSTACK_WEBHOOK_KEY="ow_$(rand_hex 32)"
+KEEP_API_KEY=$(rand_hex 20)
+KEEP_ADMIN_API_KEY=$(rand_hex 20)
+
 # Keep secrets
 KEEP_NEXTAUTH_SECRET=$(rand_hex 32)
 KEEP_OIDC_SECRET=$(rand_password)
@@ -117,6 +122,8 @@ owlstack:
     encryptionKey: "${OWLSTACK_ENCRYPTION_KEY}"
     zammadToken: "${ZAMMAD_OWLSTACK_TOKEN}"
     outlineApiToken: "${OUTLINE_API_TOKEN}"
+    webhookKey: "${OWLSTACK_WEBHOOK_KEY}"
+    keepApiKey: "${KEEP_ADMIN_API_KEY}"
 
 # -----------------------------------------------------------------------------
 # PostgreSQL
@@ -195,6 +202,8 @@ keep:
   secrets:
     databaseConnectionString: "postgresql+psycopg2://keep:${KEEP_DB_PW}@owl-postgresql:5432/keep"
     nextauthSecret: "${KEEP_NEXTAUTH_SECRET}"
+    keepApiKey: "${KEEP_API_KEY}"
+    keepAdminApiKey: "${KEEP_ADMIN_API_KEY}"
   oauth2Proxy:
     cookieSecret: "${KEEP_OAUTH2_PROXY_COOKIE_SECRET}"
 
@@ -240,6 +249,7 @@ ZAMMAD_DB_PASSWORD=${ZAMMAD_DB_PW}
 OWLSTACK_SESSION_SECRET=${OWLSTACK_SESSION_SECRET}
 OWLSTACK_OIDC_CLIENT_SECRET=${OWLSTACK_OIDC_SECRET}
 OWLSTACK_ENCRYPTION_KEY=${OWLSTACK_ENCRYPTION_KEY}
+OWLSTACK_WEBHOOK_KEY=${OWLSTACK_WEBHOOK_KEY}
 
 # Redis
 REDIS_PASSWORD=${REDIS_PW}
@@ -260,6 +270,8 @@ KEEP_DB_PASSWORD=${KEEP_DB_PW}
 KEEP_NEXTAUTH_SECRET=${KEEP_NEXTAUTH_SECRET}
 KEEP_OIDC_CLIENT_SECRET=${KEEP_OIDC_SECRET}
 KEEP_OAUTH2_PROXY_COOKIE_SECRET=${KEEP_OAUTH2_PROXY_COOKIE_SECRET}
+KEEP_API_KEY=${KEEP_API_KEY}
+KEEP_ADMIN_API_KEY=${KEEP_ADMIN_API_KEY}
 
 # Outline
 OUTLINE_DB_PASSWORD=${OUTLINE_DB_PW}

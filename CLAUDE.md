@@ -47,10 +47,12 @@ For external/public chart releases, Helm packages these dependencies into the re
 ## Cross-Service Wiring Checklist
 
 - Owlstack DB/Redis/OIDC/Zammad/Outline values set
+- Owlstack webhook/Keep API secrets set (`OWLSTACK_WEBHOOK_KEY`, `OWLSTACK_KEEP_API_KEY`)
 - Keep DB + oauth2-proxy values set
+- Keep API keys set (`keepApiKey` for Vector ingest, `keepAdminApiKey` for Owlstack poller)
 - Outline DB/Redis/OIDC/S3 values set
 - Keycloak realm import placeholders matched to values
-- Vector `KEEP_API_KEY` secret present when vector is enabled
+- Vector sink secrets present when vector is enabled (`KEEP_API_KEY`, `NIGHTOWL_API_KEY`)
 
 ## Lab Workflow
 

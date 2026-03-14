@@ -102,6 +102,14 @@ Check all three components together:
 2. Verify sink URL and API key env in `values.lab.yaml`
 3. Verify `KEEP_API_KEY` exists in `keep-secrets`
 
+### Keep alerts present but not visible in NightOwl
+
+1. Check Owlstack API logs for webhook auth tenant:
+   `kubectl logs deploy/owl-owlstack-api -n owl --tail=300 | rg "webhooks/keep|authenticated via API key"`
+2. Confirm webhook requests authenticate to the expected tenant slug (for lab: `acme`).
+3. Confirm Vector `NIGHTOWL_API_KEY` reads from `owl-owlstack` key `OWLSTACK_WEBHOOK_KEY`.
+4. Confirm Owlstack worker has `OWLSTACK_WEBHOOK_TENANT` set to the same tenant slug.
+
 ### Keep -> Owlstack webhook not creating incidents
 
 1. Check Owlstack API logs:

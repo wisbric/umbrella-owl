@@ -20,16 +20,20 @@ metadata:
 data:
   owls-realm.json: |-
     {{- $realm := .Files.Get "keycloak/owls-realm.json" }}
-    {{- $realm = $realm | replace "NIGHTOWL_OIDC_SECRET_PLACEHOLDER" (.Values.owlstack.secrets.oidcClientSecret | default "changeme") }}
-    {{- $realm = $realm | replace "KEEP_OIDC_SECRET_PLACEHOLDER" (.Values.keep.oidcClientSecret | default "changeme") }}
-    {{- $realm = $realm | replace "OUTLINE_OIDC_SECRET_PLACEHOLDER" (.Values.outline.oidcClientSecret | default "changeme") }}
+    {{- $realm = $realm | replace "OWLSTACK_BASE_URL_PLACEHOLDER" (include "umbrella-owl.owlstackBaseUrl" .) }}
+    {{- $realm = $realm | replace "KEEP_BASE_URL_PLACEHOLDER" (include "umbrella-owl.keepBaseUrl" .) }}
+    {{- $realm = $realm | replace "OUTLINE_BASE_URL_PLACEHOLDER" (include "umbrella-owl.outlineBaseUrl" .) }}
     {{ $realm | nindent 4 }}
   owls-realm-partial.json: |-
     {{- $partial := .Files.Get "keycloak/owls-realm-partial.json" }}
-    {{- $partial = $partial | replace "NIGHTOWL_OIDC_SECRET_PLACEHOLDER" (.Values.owlstack.secrets.oidcClientSecret | default "changeme") }}
-    {{- $partial = $partial | replace "KEEP_OIDC_SECRET_PLACEHOLDER" (.Values.keep.oidcClientSecret | default "changeme") }}
-    {{- $partial = $partial | replace "OUTLINE_OIDC_SECRET_PLACEHOLDER" (.Values.outline.oidcClientSecret | default "changeme") }}
+    {{- $partial = $partial | replace "OWLSTACK_BASE_URL_PLACEHOLDER" (include "umbrella-owl.owlstackBaseUrl" .) }}
+    {{- $partial = $partial | replace "KEEP_BASE_URL_PLACEHOLDER" (include "umbrella-owl.keepBaseUrl" .) }}
+    {{- $partial = $partial | replace "OUTLINE_BASE_URL_PLACEHOLDER" (include "umbrella-owl.outlineBaseUrl" .) }}
     {{ $partial | nindent 4 }}
+  {{- if .Values.keycloak.realmImport.includeSampleUsers }}
+  owls-realm-lab-users.json: |-
+    {{ .Files.Get "keycloak/owls-realm-lab-users.json" | nindent 4 }}
+  {{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -59,6 +63,25 @@ spec:
             - |
               set -e
               KEYCLOAK_URL="http://{{ .Release.Name }}-keycloak:80"
+              escape_sed() {
+                printf '%s' "$1" | sed -e 's/[|&]/\\&/g'
+              }
+              render_realm() {
+                src="$1"
+                dst="$2"
+                cp "$src" "$dst"
+                OWLSTACK_SECRET_ESCAPED=$(escape_sed "${OWLSTACK_OIDC_CLIENT_SECRET:-}")
+                KEEP_SECRET_ESCAPED=$(escape_sed "${KEEP_OIDC_CLIENT_SECRET:-}")
+                OUTLINE_SECRET_ESCAPED=$(escape_sed "${OUTLINE_OIDC_CLIENT_SECRET:-}")
+                sed -i \
+                  -e "s|NIGHTOWL_OIDC_SECRET_PLACEHOLDER|$OWLSTACK_SECRET_ESCAPED|g" \
+                  -e "s|KEEP_OIDC_SECRET_PLACEHOLDER|$KEEP_SECRET_ESCAPED|g" \
+                  -e "s|OUTLINE_OIDC_SECRET_PLACEHOLDER|$OUTLINE_SECRET_ESCAPED|g" \
+                  "$dst"
+              }
+
+              render_realm /realm/owls-realm.json /tmp/owls-realm.json
+              render_realm /realm/owls-realm-partial.json /tmp/owls-realm-partial.json
 
               # ---------------------------------------------------------------
               # Wait for Keycloak to be ready (up to 10 minutes)
@@ -92,7 +115,6 @@ spec:
 
               if [ -z "$TOKEN" ]; then
                 echo "ERROR: Failed to get admin access token"
-                echo "Response: $TOKEN_RESPONSE"
                 exit 1
               fi
               echo "Authenticated."
@@ -110,7 +132,7 @@ spec:
                   -X POST "$KEYCLOAK_URL/admin/realms/owls/partialImport" \
                   -H "Authorization: Bearer $TOKEN" \
                   -H "Content-Type: application/json" \
-                  -d @/realm/owls-realm-partial.json)
+                  -d @/tmp/owls-realm-partial.json)
 
                 case "$IMPORT_STATUS" in
                   200|201|204)
@@ -122,6 +144,24 @@ spec:
                     exit 1
                     ;;
                 esac
+                if [ "{{ ternary "true" "false" .Values.keycloak.realmImport.includeSampleUsers }}" = "true" ]; then
+                  echo "Applying sample users import..."
+                  USERS_STATUS=$(curl -sf -o /tmp/users-response.txt -w "%{http_code}" \
+                    -X POST "$KEYCLOAK_URL/admin/realms/owls/partialImport" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d @/realm/owls-realm-lab-users.json)
+                  case "$USERS_STATUS" in
+                    200|201|204)
+                      echo "Sample users import applied successfully."
+                      ;;
+                    *)
+                      echo "ERROR: Sample users import failed (HTTP $USERS_STATUS)"
+                      cat /tmp/users-response.txt 2>/dev/null || true
+                      exit 1
+                      ;;
+                  esac
+                fi
                 exit 0
               fi
 
@@ -133,7 +173,7 @@ spec:
                 -X POST "$KEYCLOAK_URL/admin/realms" \
                 -H "Authorization: Bearer $TOKEN" \
                 -H "Content-Type: application/json" \
-                -d @/realm/owls-realm.json)
+                -d @/tmp/owls-realm.json)
 
               if [ "$IMPORT_STATUS" = "201" ]; then
                 echo "Realm 'owls' imported successfully."
@@ -142,11 +182,52 @@ spec:
                 cat /tmp/response.txt 2>/dev/null || true
                 exit 1
               fi
+              if [ "{{ ternary "true" "false" .Values.keycloak.realmImport.includeSampleUsers }}" = "true" ]; then
+                echo "Applying sample users import..."
+                USERS_STATUS=$(curl -sf -o /tmp/users-response.txt -w "%{http_code}" \
+                  -X POST "$KEYCLOAK_URL/admin/realms/owls/partialImport" \
+                  -H "Authorization: Bearer $TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d @/realm/owls-realm-lab-users.json)
+                case "$USERS_STATUS" in
+                  200|201|204)
+                    echo "Sample users import applied successfully."
+                    ;;
+                  *)
+                    echo "ERROR: Sample users import failed (HTTP $USERS_STATUS)"
+                    cat /tmp/users-response.txt 2>/dev/null || true
+                    exit 1
+                    ;;
+                esac
+              fi
           env:
             - name: KEYCLOAK_ADMIN_USER
-              value: {{ .Values.keycloak.auth.adminUser | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-keycloak-realm-import
+                  key: admin-user
             - name: KEYCLOAK_ADMIN_PASSWORD
-              value: {{ .Values.keycloak.auth.adminPassword | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-keycloak-realm-import
+                  key: admin-password
+            - name: OWLSTACK_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "umbrella-owl.owlstackSecretName" . }}
+                  key: OIDC_CLIENT_SECRET
+            - name: KEEP_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keep.secretName | default "keep-secrets" }}
+                  key: OAUTH2_PROXY_CLIENT_SECRET
+                  optional: true
+            - name: OUTLINE_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.secretName | default "outline-secrets" }}
+                  key: OIDC_CLIENT_SECRET
+                  optional: true
           volumeMounts:
             - name: realm-config
               mountPath: /realm

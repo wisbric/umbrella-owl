@@ -50,9 +50,15 @@ spec:
             {{- end }}
           env:
             - name: OAUTH2_PROXY_CLIENT_SECRET
-              value: {{ .Values.keep.oidcClientSecret | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keep.secretName | default "keep-secrets" }}
+                  key: OAUTH2_PROXY_CLIENT_SECRET
             - name: OAUTH2_PROXY_COOKIE_SECRET
-              value: {{ .Values.keep.oauth2Proxy.cookieSecret | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keep.secretName | default "keep-secrets" }}
+                  key: OAUTH2_PROXY_COOKIE_SECRET
           ports:
             - name: http
               containerPort: 4180
@@ -76,18 +82,18 @@ spec:
             limits:
               cpu: 100m
               memory: 64Mi
-          {{- if .Values.keep.oauth2Proxy.skipTlsVerify }}
+          {{- if and (not .Values.keep.oauth2Proxy.skipTlsVerify) .Values.keep.oauth2Proxy.caBundleConfigMap }}
           volumeMounts:
             - name: ca-bundle
               mountPath: /etc/ssl/certs/ca-certificates.crt
               subPath: ca-certificates.crt
               readOnly: true
           {{- end }}
-      {{- if .Values.keep.oauth2Proxy.skipTlsVerify }}
+      {{- if and (not .Values.keep.oauth2Proxy.skipTlsVerify) .Values.keep.oauth2Proxy.caBundleConfigMap }}
       volumes:
         - name: ca-bundle
           configMap:
-            name: combined-ca-bundle
+            name: {{ .Values.keep.oauth2Proxy.caBundleConfigMap }}
       {{- end }}
 ---
 apiVersion: v1

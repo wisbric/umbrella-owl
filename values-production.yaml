@@ -57,6 +57,8 @@ owlstack:
     corsAllowedOrigins: ""  # OVERRIDE (e.g. https://nightowl.example.com)
     zammadUrl: ""           # OVERRIDE (e.g. http://owl-zammad:8080)
     outlineUrl: ""          # OVERRIDE (e.g. https://outline.example.com)
+    webhookTenant: ""       # OVERRIDE (tenant slug used for webhook key auto-provisioning)
+    keepUrl: ""             # OVERRIDE (e.g. http://owl-keep-backend:8080)
 
   secrets:
     databaseUrl: ""       # OVERRIDE
@@ -64,10 +66,13 @@ owlstack:
     oidcIssuerUrl: ""     # OVERRIDE
     oidcClientId: ""      # OVERRIDE
     oidcClientSecret: ""  # OVERRIDE
+    oidcRedirectUrl: ""   # OVERRIDE (e.g. https://nightowl.example.com/auth/oidc/callback)
     sessionSecret: ""     # OVERRIDE
     encryptionKey: ""     # OVERRIDE
     zammadToken: ""       # OVERRIDE
     outlineApiToken: ""   # OVERRIDE
+    webhookKey: ""        # OVERRIDE
+    keepApiKey: ""        # OVERRIDE (Keep admin API key for incident polling)
 
   ingress:
     enabled: true
@@ -87,9 +92,6 @@ owlstack:
             pathType: Prefix
             service: api
           - path: /healthz
-            pathType: Prefix
-            service: api
-          - path: /metrics
             pathType: Prefix
             service: api
           - path: /
@@ -155,12 +157,15 @@ keep:
   secrets:
     databaseConnectionString: ""  # OVERRIDE
     nextauthSecret: ""            # OVERRIDE
+    keepApiKey: ""                # OVERRIDE (Vector -> Keep ingestion key)
+    keepAdminApiKey: ""           # OVERRIDE (Owlstack Keep poller key)
   oauth2Proxy:
     enabled: true
     clientId: keep
     issuerUrl: ""       # OVERRIDE (e.g. https://keycloak.example.com/realms/owls)
     hostname: ""        # OVERRIDE (e.g. keep.example.com)
     cookieSecret: ""    # OVERRIDE
+    caBundleConfigMap: ""  # OVERRIDE if Keycloak uses a private CA and skipTlsVerify=false
   database:
     enabled: false
   backend:

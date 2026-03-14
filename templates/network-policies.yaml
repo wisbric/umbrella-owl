@@ -147,7 +147,7 @@ spec:
 ---
 # ── Keep ──────────────────────────────────────────────────────────────────────
 # Keep backend can reach: PostgreSQL, Redis, external APIs
-# Ingress from oauth2-proxy and owlstack webhooks
+# Ingress only from ingress-nginx, oauth2-proxy, keep pods, and owlstack.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -161,7 +161,18 @@ spec:
   policyTypes: ["Ingress", "Egress"]
   ingress:
     - from:
-        - podSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $ingressControllerNamespace | quote }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keep
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keep-oauth2-proxy
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: owlstack
       ports:
         - port: 8080
           protocol: TCP

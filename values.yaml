@@ -83,6 +83,8 @@ owlstack:
     outlineUrl: ""
     outlineRunbookCollection: ""
     outlinePostMortemCollection: ""
+    webhookTenant: ""
+    keepUrl: ""
 
   secrets:
     create: true
@@ -92,6 +94,7 @@ owlstack:
     oidcIssuerUrl: ""
     oidcClientId: ""
     oidcClientSecret: ""
+    oidcRedirectUrl: ""
     sessionSecret: ""
     slackBotToken: ""
     slackSigningSecret: ""
@@ -99,6 +102,8 @@ owlstack:
     encryptionKey: ""
     zammadToken: ""
     outlineApiToken: ""
+    webhookKey: ""
+    keepApiKey: ""
 
   service:
     type: ClusterIP
@@ -214,6 +219,7 @@ keycloak:
   # Set realmImport.enabled: false to skip automatic realm bootstrap.
   realmImport:
     enabled: true
+    includeSampleUsers: false
 
 # -----------------------------------------------------------------------------
 # Zammad — Ticket engine backend
@@ -250,6 +256,7 @@ keep:
     databaseConnectionString: ""  # postgresql+psycopg2://keep:<pw>@owl-postgresql:5432/keep
     nextauthSecret: ""
     keepApiKey: ""                  # API key for Vector → Keep alert ingestion
+    keepAdminApiKey: ""             # API key for Owlstack incident poller/admin API calls
   # oauth2-proxy sidecar for SSO (templates/keep-oauth2-proxy.yaml)
   oauth2Proxy:
     enabled: true
@@ -257,6 +264,7 @@ keep:
     issuerUrl: ""
     hostname: ""
     cookieSecret: ""
+    caBundleConfigMap: ""
     skipTlsVerify: false
   # Disable Keep's internal database — use shared PostgreSQL
   database:
@@ -270,7 +278,7 @@ keep:
       - name: KEEP_OAUTH2_PROXY_ADMIN_ROLES
         value: "admin,admins"
       - name: KEEP_OAUTH2_PROXY_NOC_ROLES
-        value: "noc,member,members"
+        value: "noc,member,members,viewer,viewers,readonly"
       - name: KEEP_OAUTH2_PROXY_WEBHOOK_ROLES
         value: "webhook"
       - name: SECRET_MANAGER_TYPE
@@ -296,8 +304,6 @@ keep:
         value: x-forwarded-email
       - name: KEEP_OAUTH2_PROXY_ROLE_HEADER
         value: x-forwarded-groups
-      - name: NEXTAUTH_SECRET
-        value: "changeme"
       - name: VERCEL
         value: "1"
       - name: ENV

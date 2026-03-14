@@ -68,6 +68,7 @@ Top-level keys map directly to subcharts or umbrella-only templates:
 | Owlstack | Keycloak | `owlstack.secrets.oidcIssuerUrl`, `oidcClientId`, `oidcClientSecret` |
 | Owlstack | Zammad | `owlstack.config.zammadUrl`, `owlstack.secrets.zammadToken` |
 | Owlstack | Outline | `owlstack.config.outlineUrl`, `owlstack.secrets.outlineApiToken` |
+| Owlstack worker | Keep API | `owlstack.config.keepUrl`, `owlstack.secrets.keepApiKey` |
 | Keep | PostgreSQL | `keep.secrets.databaseConnectionString` |
 | Keep | Keycloak | `keep.oauth2Proxy.*` + Keep `AUTH_TYPE=OAUTH2PROXY` env |
 | Keep frontend/backend | Keep websocket | `/websocket` ingress path -> keep websocket service |
@@ -75,6 +76,7 @@ Top-level keys map directly to subcharts or umbrella-only templates:
 | Outline | Keycloak | `outline.environment` OIDC settings |
 | Outline | Garage | `outline.environment` AWS_* settings |
 | Vector | Keep backend | `vector.customConfig.sinks.keep_alerts.uri` + `KEEP_API_KEY` secret |
+| Vector | Owlstack keep-webhook endpoint | `vector.customConfig.sinks.nightowl_alerts.uri` + `OWLSTACK_WEBHOOK_KEY` secret |
 
 ## Keep SSO Notes
 

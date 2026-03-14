@@ -57,8 +57,7 @@ Used for:
 - Ticket document search and linking
 - Ticket suggestion panel
 - Incident post-mortem document creation
-
-Not used as a direct replacement for Owlstack's local runbook table. Owlstack still exposes `/api/v1/runbooks` for local runbook data.
+- Incident runbook linking (`/api/v1/runbooks` is Outline-backed)
 
 Values:
 
@@ -76,10 +75,11 @@ There are two valid flows in this stack:
 - Vector HTTP sink posts to Keep backend (`/alerts/event`)
 - Keep API key is provided from `keep-secrets`
 
-### B) Keep -> Owlstack (incident creation in Owlstack)
+### B) Keep -> Owlstack (incident projection + enrichment)
 
-- Keep workflow posts to Owlstack webhook (`/api/v1/webhooks/keep`)
-- Owlstack performs correlation and optional incident creation
+- Keep workflow posts alert events to Owlstack webhook (`/api/v1/webhooks/keep`)
+- Owlstack worker also polls Keep incidents via API for source-of-truth sync
+- Keep-sourced incidents are read-only for core fields in Owlstack; Owlstack adds enrichment (runbook + post-mortem links, assignment metadata)
 
 ## 4. Owlstack <-> Keycloak (OIDC)
 
@@ -134,7 +134,7 @@ Values:
 | Zammad | Owlstack | Webhook | Ticket event sync |
 | Owlstack | Outline | REST API | Docs search/link + post-mortems |
 | Vector | Keep | HTTP API | Alert ingestion |
-| Keep | Owlstack | Webhook | Alert fan-out to incident pipeline |
+| Keep | Owlstack | Webhook + poller | Alert fan-out + incident sync |
 | Owlstack | Keycloak | OIDC | User auth |
 | Keep | Keycloak | OIDC via oauth2-proxy | User auth |
 | Outline | Keycloak | OIDC | User auth |
