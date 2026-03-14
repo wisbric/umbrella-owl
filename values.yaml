@@ -456,5 +456,30 @@ global:
     # Example: "https://keycloak.example.com/realms/owls"
     issuerUrl: ""
 
+# -----------------------------------------------------------------------------
+# MCP Servers — AI agent integration (Model Context Protocol)
+# -----------------------------------------------------------------------------
+mcpServers:
+  # Kubernetes MCP server (Red Hat, read-only cluster access for owl namespace)
+  kubernetes:
+    enabled: false
+    image: ghcr.io/containers/kubernetes-mcp-server:latest
+    readOnly: true
+
+  # Keep MCP server (custom, wraps Keep REST API)
+  keep:
+    enabled: false
+    image: ghcr.io/wisbric/keep-mcp:main
+    # keepUrl: override Keep backend URL (default: auto-detected from release)
+    # secretName: secret containing KEEP_API_KEY
+    # secretKey: key within the secret
+
+  # PostgreSQL MCP server (Anthropic official, read-only SQL access)
+  postgres:
+    enabled: false
+    image: node:20-slim
+    # secretName: secret containing DATABASE_URL
+    # secretKey: key within the secret
+
 nameOverride: ""
 fullnameOverride: ""

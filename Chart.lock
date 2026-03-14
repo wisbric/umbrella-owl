@@ -1,7 +1,7 @@
 dependencies:
 - name: owlstack
   repository: file://../owlstack/deploy/helm/owlstack
-  version: 0.3.5
+  version: 0.4.0
 - name: postgresql
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 16.4.1
@@ -26,5 +26,5 @@ dependencies:
 - name: vector
   repository: https://helm.vector.dev
   version: 0.50.0
-digest: sha256:27e52abcf33452062c64fb9aceaf6ec2d6526cb1e7d91787986514fa26207869
-generated: "2026-03-09T19:51:27.042458379+13:00"
+digest: sha256:93eb4953f62578aa95577b81019ae85d7002c6b64015a2ff24654a4a492ac4ea
+generated: "2026-03-14T15:20:01.527280432+13:00"

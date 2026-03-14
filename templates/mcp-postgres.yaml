@@ -1,0 +1,61 @@
+{{- if and .Values.mcpServers .Values.mcpServers.postgres .Values.mcpServers.postgres.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mcp-postgres
+  labels:
+    app.kubernetes.io/name: mcp-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mcp-postgres
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mcp-postgres
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: mcp-postgres
+          image: {{ .Values.mcpServers.postgres.image | default "node:20-slim" }}
+          command: ["npx", "-y", "@modelcontextprotocol/server-postgres", "$(DATABASE_URL)"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mcpServers.postgres.secretName | default (printf "%s-owlstack" .Release.Name) }}
+                  key: {{ .Values.mcpServers.postgres.secretKey | default "DATABASE_URL" }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mcp-postgres
+  labels:
+    app.kubernetes.io/name: mcp-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: mcp-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
