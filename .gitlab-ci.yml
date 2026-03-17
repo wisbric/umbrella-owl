@@ -3,38 +3,30 @@ stages:
   - release
 
 variables:
-  HELM_VERSION: "3.17.0"
   OCI_REGISTRY: "oci://registry.gitlab.com/adfinisde/agentic-workspace/charts"
 
 default:
-  image: alpine/helm:${HELM_VERSION}
+  image:
+    name: alpine/helm:3.17.0
+    entrypoint: [""]
 
-# ---------------------------------------------------------------------------
-# Shared setup: owlstack stub + external repos
-# ---------------------------------------------------------------------------
 .helm-setup: &helm-setup
   - |
-    # Create owlstack chart stub (the real chart is cross-repo)
     mkdir -p ../owlstack/deploy/helm/owlstack/templates
-    cat > ../owlstack/deploy/helm/owlstack/Chart.yaml << 'EOF'
+    cat > ../owlstack/deploy/helm/owlstack/Chart.yaml << 'STUBEOF'
     apiVersion: v2
     name: owlstack
     version: "0.3.0"
     description: Stub chart for CI dependency resolution
-    EOF
+    STUBEOF
     touch ../owlstack/deploy/helm/owlstack/values.yaml
-  - |
-    # Add external Helm repos
-    helm repo add zammad https://zammad.github.io/zammad-helm
-    helm repo add keephq https://keephq.github.io/helm-charts
-    helm repo add lrstanley https://helm.liam.sh
-    helm repo add derwitt https://charts.derwitt.dev
-    helm repo add vector https://helm.vector.dev
-    helm repo update
+  - helm repo add zammad https://zammad.github.io/zammad-helm
+  - helm repo add keephq https://keephq.github.io/helm-charts
+  - helm repo add lrstanley https://helm.liam.sh
+  - helm repo add derwitt https://charts.derwitt.dev
+  - helm repo add vector https://helm.vector.dev
+  - helm repo update
 
-# ---------------------------------------------------------------------------
-# Lint — runs on all pushes and merge requests
-# ---------------------------------------------------------------------------
 lint:
   stage: lint
   before_script:
@@ -43,12 +35,10 @@ lint:
     - helm dep build .
     - helm lint .
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
 
-# ---------------------------------------------------------------------------
-# Release — runs on tags matching v*
-# ---------------------------------------------------------------------------
 release:
   stage: release
   before_script:
@@ -58,14 +48,11 @@ release:
     - |
       VERSION="${CI_COMMIT_TAG#v}"
       echo "Releasing version ${VERSION}"
-
-      # Pin chart versions to the tag
       sed -i "s|^version:.*|version: \"$VERSION\"|" Chart.yaml
       sed -i "/name: owlstack/,/repository:/{s/version: .*/version: \"$VERSION\"/}" Chart.yaml
-
       helm dep build .
       helm lint .
       helm package . --destination /tmp/charts
       helm push "/tmp/charts/umbrella-owl-${VERSION}.tgz" "${OCI_REGISTRY}"
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v/'
+    - if: $CI_COMMIT_TAG =~ /^v/
