@@ -16,9 +16,11 @@ default:
     cat > ../owlstack/deploy/helm/owlstack/Chart.yaml << 'STUBEOF'
     apiVersion: v2
     name: owlstack
-    version: "0.3.0"
+    version: "0.4.0"
     description: Stub chart for CI dependency resolution
     STUBEOF
+    # Fix indentation from heredoc
+    sed -i 's/^    //' ../owlstack/deploy/helm/owlstack/Chart.yaml
     touch ../owlstack/deploy/helm/owlstack/values.yaml
   - helm repo add zammad https://zammad.github.io/zammad-helm
   - helm repo add keephq https://keephq.github.io/helm-charts
