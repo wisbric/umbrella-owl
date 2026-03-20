@@ -18,7 +18,8 @@ It does **not** contain Owlstack application code.
 `Chart.yaml` dependencies include:
 
 - `owlstack` via local chart path: `file://../owlstack/deploy/helm/owlstack`
-- Third-party charts: PostgreSQL, Redis, Keycloak, Zammad, Keep, Outline, Garage, Vector
+- Third-party charts: PostgreSQL, Redis, Zammad, Keep, Outline, Garage, Vector
+- Keycloak is external (central platform Keycloak at `keycloak.mgmt.dev-ai.wisbric.com/realms/platform`)
 
 For external/public chart releases, Helm packages these dependencies into the release artifact.
 
@@ -62,7 +63,7 @@ The owlstack MCP server itself is deployed by the owlstack subchart (`owlstack.m
 - Keep DB + oauth2-proxy values set
 - Keep API keys set (`keepApiKey` for Vector ingest, `keepAdminApiKey` for Owlstack poller)
 - Outline DB/Redis/OIDC/S3 values set
-- Keycloak realm import placeholders matched to values
+- OIDC issuer URL set to central platform Keycloak (global.oidc.issuerUrl)
 - Vector sink secrets present when vector is enabled (`KEEP_API_KEY`, `NIGHTOWL_API_KEY`)
 
 ## Lab Workflow

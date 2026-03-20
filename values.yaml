@@ -180,47 +180,6 @@ redis:
         memory: 256Mi
 
 # -----------------------------------------------------------------------------
-# Keycloak (Bitnami) — OIDC identity provider
-# Chart: oci://registry-1.docker.io/bitnamicharts/keycloak
-# Docs: https://artifacthub.io/packages/helm/bitnami/keycloak
-# Set enabled: false to use an external OIDC provider instead
-# -----------------------------------------------------------------------------
-keycloak:
-  enabled: false
-  auth:
-    adminUser: admin
-    adminPassword: ""          # MUST override — no default
-  production: false
-  proxyHeaders: xforwarded     # TLS terminated at ingress
-  httpRelativePath: /
-  postgresql:
-    enabled: false             # Use the shared PostgreSQL instance
-  externalDatabase:
-    host: ""
-    port: 5432
-    database: keycloak
-    user: keycloak
-    password: ""
-  ingress:
-    enabled: false
-    hostname: keycloak.example.com
-    ingressClassName: nginx
-    tls: false
-    annotations: {}
-  resources:
-    requests:
-      cpu: 200m
-      memory: 512Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
-  # Realm import — the umbrella chart includes a post-install Job
-  # (templates/keycloak-realm-import.yaml) that imports keycloak/owls-realm.json.
-  # Set realmImport.enabled: false to skip automatic realm bootstrap.
-  realmImport:
-    enabled: true
-    includeSampleUsers: false
-
 # -----------------------------------------------------------------------------
 # Zammad — Ticket engine backend
 # Chart: https://zammad.github.io/zammad-helm
@@ -247,7 +206,7 @@ zammad:
 # -----------------------------------------------------------------------------
 keep:
   enabled: false
-  # OIDC client secret for Keycloak realm import
+  # OIDC client secret (from central platform Keycloak)
   oidcClientSecret: ""
   # Name for umbrella-managed Keep secret
   secretName: keep-secrets
@@ -326,12 +285,12 @@ keep:
 # -----------------------------------------------------------------------------
 # Outline (getoutline.com) — Collaborative wiki, replaces BookOwl
 # Chart: https://helm.liam.sh (lrstanley)
-# OIDC directly against Keycloak, S3 via Garage
+# OIDC directly against central platform Keycloak, S3 via Garage
 # Set enabled: false to use Outline as an external service
 # -----------------------------------------------------------------------------
 outline:
   enabled: false
-  # OIDC client secret for Keycloak realm import
+  # OIDC client secret (from central platform Keycloak)
   oidcClientSecret: ""
   # Name for umbrella-managed Outline secret
   secretName: outline-secrets
@@ -435,7 +394,6 @@ backup:
   retentionDays: 7
   databases:
     - nightowl
-    - keycloak
     - keep
     - outline
 
@@ -453,7 +411,7 @@ global:
   oidc:
     # OIDC issuer URL shared by all owl services.
     # Each subchart falls back to this value when its own issuer is empty.
-    # Example: "https://keycloak.example.com/realms/owls"
+    # Example: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform"
     issuerUrl: ""
 
 # -----------------------------------------------------------------------------
