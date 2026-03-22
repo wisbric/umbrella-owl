@@ -441,3 +441,17 @@ mcpServers:
 
 nameOverride: ""
 fullnameOverride: ""
+
+# External Secrets — pull secrets from OpenBao
+externalSecrets:
+  enabled: false
+  store:
+    server: "https://openbao-active.openbao.svc:8200"
+    path: "secret"
+    authPath: "kubernetes-mgmt"
+    role: "eso-owl"
+    serviceAccountName: "owl-eso"
+    caCertSecretName: "openbao-ca-cert"
+    caCertSourceSecret: "openbao-internal-tls"
+    caCertSourceNamespace: "openbao"
+  refreshInterval: "1h"
