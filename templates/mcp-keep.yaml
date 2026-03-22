@@ -20,7 +20,7 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       imagePullSecrets:
-        - name: gitlab-registry
+        - name: {{ .Values.registryCredentials.secretName | default "gitlab-registry" }}
       containers:
         - name: mcp-keep
           image: {{ .Values.mcpServers.keep.image | default "registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp:main" }}
