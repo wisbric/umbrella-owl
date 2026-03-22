@@ -15,7 +15,7 @@ keywords:
   - on-call
 
 dependencies:
-  # -- Owl applications (OCI from GHCR)
+  # -- Owl applications (local chart for dev, OCI from GitLab for CI)
   - name: owlstack
     version: "0.4.0"
     repository: "file://../owlstack/deploy/helm/owlstack"

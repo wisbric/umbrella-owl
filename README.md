@@ -54,7 +54,7 @@ Production/development use their respective values files.
 Top-level keys map directly to subcharts or umbrella-only templates:
 
 - `owlstack`, `postgresql`, `redis`, `keycloak`, `zammad`, `keep`, `outline`, `garage`, `vector`
-- `registryCredentials` (shared GHCR pull secret)
+- `registryCredentials` (shared GitLab registry pull secret)
 - `outlineSetup` (Outline API-token bootstrap hook + retry CronJob)
 - `backup` (umbrella templated CronJob)
 - `networkPolicies` (umbrella templated policies)
@@ -124,7 +124,7 @@ umbrella-owl/
 ## CI/CD
 
 - PR checks: `helm lint`, `helm template`, dependency validation
-- Tag `v*`: package/publish umbrella chart to GHCR
+- Tag `v*`: package/publish umbrella chart to GitLab OCI registry
 
 ## License
 

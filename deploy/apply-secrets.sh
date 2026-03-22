@@ -31,11 +31,13 @@ rand_password() { openssl rand -base64 32 | tr -d '/+=' | head -c 32; }
 rand_hex() { openssl rand -hex "$1"; }
 
 # ---------------------------------------------------------------------------
-# GHCR credentials — needed to pull private images and Helm charts
+# GitLab registry credentials — needed to pull private container images
+# Use a GitLab PAT or deploy token with read_registry scope.
 # ---------------------------------------------------------------------------
 echo ""
-read -rp "GitHub username for GHCR: " GHCR_USERNAME
-read -rsp "GitHub PAT (read:packages scope): " GHCR_PAT
+echo "GitLab Registry Credentials (PAT or deploy token with read_registry scope):"
+read -rp "  Username (e.g. gitlab+deploy-token-NNN or service account): " REGISTRY_USERNAME
+read -rsp "  Token/Password: " REGISTRY_PASSWORD
 echo ""
 
 echo "==> Generating random passwords..."
@@ -104,11 +106,11 @@ cat > "$SECRETS_FILE" <<SECRETS_EOF
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# GHCR registry credentials
+# GitLab registry credentials (PAT with read_registry scope)
 # -----------------------------------------------------------------------------
 registryCredentials:
-  username: "${GHCR_USERNAME}"
-  password: "${GHCR_PAT}"
+  username: "${REGISTRY_USERNAME}"
+  password: "${REGISTRY_PASSWORD}"
 
 # -----------------------------------------------------------------------------
 # Owlstack secrets
@@ -233,9 +235,9 @@ cat > "$CREDS_FILE" <<CREDS_EOF
 # Lab credentials — generated $(date -u +%Y-%m-%dT%H:%M:%SZ)
 # Keep this file safe. Do NOT commit.
 
-# GHCR registry
-GHCR_USERNAME=${GHCR_USERNAME}
-GHCR_PAT=${GHCR_PAT}
+# GitLab registry
+REGISTRY_USERNAME=${REGISTRY_USERNAME}
+REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
 
 # PostgreSQL superuser
 PG_SUPERUSER_PASSWORD=${PG_SUPERUSER_PW}
@@ -282,11 +284,11 @@ OUTLINE_AWS_ACCESS_KEY_ID=
 OUTLINE_AWS_SECRET_ACCESS_KEY=
 
 # URLs
-NIGHTOWL_URL=https://nightowl.devops.lab
-KEYCLOAK_URL=https://keycloak.devops.lab
-ZAMMAD_URL=https://zammad.devops.lab
-KEEP_URL=https://keep.devops.lab
-OUTLINE_URL=https://outline.devops.lab
+NIGHTOWL_URL=https://nightowl.ops.dev-ai.wisbric.com
+KEYCLOAK_URL=https://keycloak.mgmt.dev-ai.wisbric.com
+ZAMMAD_URL=https://zammad.ops.dev-ai.wisbric.com
+KEEP_URL=https://keep.ops.dev-ai.wisbric.com
+OUTLINE_URL=https://outline.ops.dev-ai.wisbric.com
 CREDS_EOF
 chmod 600 "$CREDS_FILE"
 echo "    Credentials saved to $CREDS_FILE"
@@ -318,9 +320,8 @@ echo "    --namespace $NAMESPACE \\"
 echo "    -f values.lab.yaml \\"
 echo "    -f values.lab-secrets.yaml"
 echo ""
-echo "  # 3. Keycloak realm is imported automatically via post-install hook."
-echo "  #    Check its status with:"
-echo "  kubectl get jobs -n $NAMESPACE -l app.kubernetes.io/name=keycloak-realm-import"
+echo "  # 3. Keycloak is external (keycloak.mgmt.dev-ai.wisbric.com)."
+echo "  #    Ensure OIDC clients (nightowl, keep, outline) exist in the platform realm."
 echo ""
 echo "Credentials file: $CREDS_FILE"
 echo "============================================================================="
