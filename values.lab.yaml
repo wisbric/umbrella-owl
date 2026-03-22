@@ -15,7 +15,7 @@
 # -----------------------------------------------------------------------------
 global:
   oidc:
-    issuerUrl: "https://keycloak.devops.lab/realms/owls"
+    issuerUrl: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform"
 
 # -----------------------------------------------------------------------------
 # GitLab registry credentials — pull private container images and Helm charts
@@ -39,17 +39,6 @@ owlstack:
   image:
     tag: main
     pullPolicy: Always
-
-  # Mount combined CA bundle so OIDC discovery trusts HTTPS Keycloak
-  extraVolumes:
-    - name: ca-bundle
-      configMap:
-        name: combined-ca-bundle
-  extraVolumeMounts:
-    - name: ca-bundle
-      mountPath: /etc/ssl/certs/ca-certificates.crt
-      subPath: ca-certificates.crt
-      readOnly: true
 
   frontend:
     enabled: true
@@ -85,15 +74,15 @@ owlstack:
 
   config:
     logLevel: debug
-    corsAllowedOrigins: "https://nightowl.devops.lab"
+    corsAllowedOrigins: "https://nightowl.ops.dev-ai.wisbric.com"
     zammadUrl: "http://owl-zammad:8080"
     workerPollSeconds: "60"
-    outlineUrl: "https://outline.devops.lab"
+    outlineUrl: "https://outline.ops.dev-ai.wisbric.com"
     webhookTenant: "acme"
     outlineRunbookCollection: "Runbooks"
     outlinePostMortemCollection: "Post Mortems"
     keepUrl: "http://owl-keep-backend:8080"
-    keepFrontendUrl: "https://keep.devops.lab"
+    keepFrontendUrl: "https://keep.ops.dev-ai.wisbric.com"
     mcpBackends: "keep=http://owl-mcp-keep:8082,k8s=http://owl-mcp-k8s:8083"
 
   mcp:
@@ -112,7 +101,7 @@ owlstack:
     redisUrl: ""            # Set via values.lab-secrets.yaml
     oidcClientId: "nightowl"
     oidcClientSecret: ""  # Set via values.lab-secrets.yaml
-    oidcRedirectUrl: "https://nightowl.devops.lab/auth/oidc/callback"
+    oidcRedirectUrl: "https://nightowl.ops.dev-ai.wisbric.com/auth/oidc/callback"
     sessionSecret: ""     # Set via values.lab-secrets.yaml
     encryptionKey: ""     # Set via values.lab-secrets.yaml
     zammadToken: ""       # Set via values.lab-secrets.yaml
@@ -122,11 +111,9 @@ owlstack:
     enabled: true
     className: nginx
     annotations:
-      cert-manager.io/issuer: step-cluster-issuer
-      cert-manager.io/issuer-kind: StepClusterIssuer
-      cert-manager.io/issuer-group: certmanager.step.sm
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
-      - host: nightowl.devops.lab
+      - host: nightowl.ops.dev-ai.wisbric.com
         paths:
           - path: /api
             pathType: Prefix
@@ -149,7 +136,7 @@ owlstack:
     tls:
       - secretName: nightowl-tls
         hosts:
-          - nightowl.devops.lab
+          - nightowl.ops.dev-ai.wisbric.com
 
   serviceMonitor:
     enabled: false
@@ -169,7 +156,7 @@ postgresql:
     database: nightowl
   primary:
     persistence:
-      size: 5Gi
+      size: 20Gi
       # Uses default StorageClass (Longhorn)
     resources:
       requests:
@@ -194,7 +181,7 @@ redis:
     password: ""  # Set via values.lab-secrets.yaml
   master:
     persistence:
-      size: 2Gi
+      size: 5Gi
     resources:
       requests:
         cpu: 50m
@@ -204,48 +191,10 @@ redis:
         memory: 128Mi
 
 # -----------------------------------------------------------------------------
-# Keycloak — enabled for OIDC
+# Keycloak — disabled (external at keycloak.mgmt.dev-ai.wisbric.com)
 # -----------------------------------------------------------------------------
 keycloak:
-  enabled: true
-  image:
-    repository: bitnamilegacy/keycloak
-    tag: 26.3.3-debian-12-r0
-  auth:
-    adminUser: admin
-    adminPassword: ""  # Set via values.lab-secrets.yaml
-  production: false
-  proxyHeaders: xforwarded
-  extraEnvVars:
-    - name: KC_HOSTNAME
-      value: "https://keycloak.devops.lab"
-  postgresql:
-    enabled: false
-  externalDatabase:
-    host: owl-postgresql
-    port: 5432
-    database: keycloak
-    user: keycloak
-    password: ""  # Set via values.lab-secrets.yaml
-  ingress:
-    enabled: true
-    hostname: keycloak.devops.lab
-    ingressClassName: nginx
-    tls: true
-    annotations:
-      cert-manager.io/issuer: step-cluster-issuer
-      cert-manager.io/issuer-kind: StepClusterIssuer
-      cert-manager.io/issuer-group: certmanager.step.sm
-  resources:
-    requests:
-      cpu: 200m
-      memory: 512Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
-  realmImport:
-    enabled: true
-    includeSampleUsers: true
+  enabled: false
 
 # -----------------------------------------------------------------------------
 # Zammad — enabled for ticket management
@@ -296,7 +245,7 @@ zammad:
       masterOnly: false
       replicaCount: 1
       persistence:
-        size: 5Gi
+        size: 10Gi
     data:
       replicaCount: 0
     coordinating:
@@ -314,18 +263,16 @@ zammad:
   ingress:
     enabled: true
     hosts:
-      - host: zammad.devops.lab
+      - host: zammad.ops.dev-ai.wisbric.com
         paths:
           - path: /
             pathType: Prefix
     tls:
       - secretName: zammad-tls
         hosts:
-          - zammad.devops.lab
+          - zammad.ops.dev-ai.wisbric.com
     annotations:
-      cert-manager.io/issuer: step-cluster-issuer
-      cert-manager.io/issuer-kind: StepClusterIssuer
-      cert-manager.io/issuer-group: certmanager.step.sm
+      cert-manager.io/cluster-issuer: letsencrypt-prod
 
 # -----------------------------------------------------------------------------
 # Keep — AIOps alert management with oauth2-proxy SSO
@@ -340,11 +287,9 @@ keep:
   oauth2Proxy:
     enabled: true
     clientId: keep
-    issuerUrl: "https://keycloak.devops.lab/realms/owls"
-    hostname: keep.devops.lab
+    issuerUrl: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform"
+    hostname: keep.ops.dev-ai.wisbric.com
     cookieSecret: ""  # Set via values.lab-secrets.yaml
-    caBundleConfigMap: combined-ca-bundle
-    skipTlsVerify: false  # Trust lab Keycloak via combined CA bundle
   database:
     enabled: false
   backend:
@@ -383,7 +328,7 @@ keep:
       - name: KEEP_OAUTH2_PROXY_ROLE_HEADER
         value: x-forwarded-groups
       - name: NEXTAUTH_URL
-        value: "https://keep.devops.lab"
+        value: "https://keep.ops.dev-ai.wisbric.com"
       - name: VERCEL
         value: "1"
       - name: ENV
@@ -405,13 +350,11 @@ keep:
       enabled: false
   # Umbrella-managed ingress annotations for oauth2-proxy route
   ingressAnnotations:
-    cert-manager.io/issuer: step-cluster-issuer
-    cert-manager.io/issuer-kind: StepClusterIssuer
-    cert-manager.io/issuer-group: certmanager.step.sm
+    cert-manager.io/cluster-issuer: letsencrypt-prod
   ingressTls:
     - secretName: keep-tls
       hosts:
-        - keep.devops.lab
+        - keep.ops.dev-ai.wisbric.com
 
 # -----------------------------------------------------------------------------
 # Outline — collaborative wiki (replaces BookOwl)
@@ -442,7 +385,7 @@ outline:
   # Outline app settings
   outline:
     generateEncryptionKeys: false
-    url: "https://outline.devops.lab"
+    url: "https://outline.ops.dev-ai.wisbric.com"
     fileStorage:
       system: s3
   # Non-secret env vars for OIDC and S3
@@ -451,13 +394,13 @@ outline:
     - name: OIDC_CLIENT_ID
       value: outline
     - name: OIDC_AUTH_URI
-      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/auth"
+      value: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform/protocol/openid-connect/auth"
     - name: OIDC_TOKEN_URI
-      value: "http://owl-keycloak:80/realms/owls/protocol/openid-connect/token"
+      value: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform/protocol/openid-connect/token"
     - name: OIDC_USERINFO_URI
-      value: "http://owl-keycloak:80/realms/owls/protocol/openid-connect/userinfo"
+      value: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform/protocol/openid-connect/userinfo"
     - name: OIDC_LOGOUT_URI
-      value: "https://keycloak.devops.lab/realms/owls/protocol/openid-connect/logout"
+      value: "https://keycloak.mgmt.dev-ai.wisbric.com/realms/platform/protocol/openid-connect/logout"
     - name: OIDC_USERNAME_CLAIM
       value: preferred_username
     - name: OIDC_DISPLAY_NAME
@@ -475,7 +418,6 @@ outline:
       value: private
     - name: AWS_REGION
       value: garage
-    # NODE_EXTRA_CA_CERTS not needed — OIDC token/userinfo use internal HTTP
   # Inject secrets from umbrella-managed K8s Secret
   environmentFrom:
     - secretRef:
@@ -484,20 +426,18 @@ outline:
     enabled: true
     className: nginx
     annotations:
-      cert-manager.io/issuer: step-cluster-issuer
-      cert-manager.io/issuer-kind: StepClusterIssuer
-      cert-manager.io/issuer-group: certmanager.step.sm
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
-      - host: outline.devops.lab
+      - host: outline.ops.dev-ai.wisbric.com
         paths:
           - path: /
             pathType: Prefix
     tls:
       - secretName: outline-tls
         hosts:
-          - outline.devops.lab
+          - outline.ops.dev-ai.wisbric.com
   # Note: extraVolumes/extraVolumeMounts not supported by lrstanley chart.
-  # OIDC token/userinfo calls use internal HTTP service to avoid TLS issues.
+  # OIDC token/userinfo calls use external Keycloak (LE certs, no CA bundle needed).
 
 # -----------------------------------------------------------------------------
 # Outline setup automation
@@ -523,7 +463,7 @@ garage:
     s3:
       api:
         region: garage
-        rootDomain: ".s3.garage.devops.lab"
+        rootDomain: ".s3.garage.ops.dev-ai.wisbric.com"
   deployment:
     replicaCount: 1
   persistence:
@@ -643,11 +583,10 @@ backup:
   enabled: true
   schedule: "0 2 * * *"
   storageClass: longhorn
-  storageSize: 5Gi
+  storageSize: 20Gi
   retentionDays: 7
   databases:
     - nightowl
-    - keycloak
     - keep
     - outline
 
