@@ -24,7 +24,7 @@ The following components have been deployed:
     Service: {{ .Release.Name }}-redis-master:6379
 {{- end }}
 
-{{- if .Values.keycloak.enabled }}
+{{- if and .Values.keycloak .Values.keycloak.enabled }}
 
   Keycloak (OIDC)
     Service: {{ .Release.Name }}-keycloak:80
