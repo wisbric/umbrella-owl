@@ -39,7 +39,7 @@ Umbrella chart deploys optional MCP servers for AI agent integration (all gated 
 
 - `templates/mcp-ingress.yaml` — ingress at `nightowl.devops.lab/mcp/`
 - `templates/mcp-k8s.yaml` — K8s MCP server (Red Hat, read-only) with RBAC
-- `templates/mcp-keep.yaml` — Keep MCP server (`ghcr.io/wisbric/keep-mcp`)
+- `templates/mcp-keep.yaml` — Keep MCP server (`registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp`)
 - `templates/mcp-postgres.yaml` — PostgreSQL MCP server (Anthropic official)
 
 The owlstack MCP server itself is deployed by the owlstack subchart (`owlstack.mcp.enabled`).

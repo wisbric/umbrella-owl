@@ -7,15 +7,15 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# GHCR registry credentials — shared imagePullSecret for all owl sub-charts
-# The password should be a GitHub PAT with read:packages scope.
+# GitLab registry credentials — shared imagePullSecret for all owl sub-charts
+# The password should be a GitLab deploy token with read_registry scope.
 # For lab: set username/password via values.lab-secrets.yaml
 # For production: inject via external-secrets-operator or --set
 # -----------------------------------------------------------------------------
 registryCredentials:
   create: false
-  secretName: ghcr-credentials
-  registry: ghcr.io
+  secretName: gitlab-registry
+  registry: registry.gitlab.com
   username: ""
   password: ""
 
@@ -26,21 +26,21 @@ registryCredentials:
 # -----------------------------------------------------------------------------
 owlstack:
   imagePullSecrets:
-    - name: ghcr-credentials
+    - name: gitlab-registry
 
   replicaCount:
     api: 2
     worker: 1
 
   image:
-    repository: ghcr.io/wisbric/owlstack-api
+    repository: registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/owlstack/api
     pullPolicy: IfNotPresent
     tag: ""
 
   frontend:
     enabled: true
     image:
-      repository: ghcr.io/wisbric/owlstack-frontend
+      repository: registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/owlstack/frontend
       pullPolicy: IfNotPresent
       tag: ""
     replicas: 1
@@ -427,7 +427,7 @@ mcpServers:
   # Keep MCP server (custom, wraps Keep REST API)
   keep:
     enabled: false
-    image: ghcr.io/wisbric/keep-mcp:main
+    image: registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp:main
     # keepUrl: override Keep backend URL (default: auto-detected from release)
     # secretName: secret containing KEEP_API_KEY
     # secretKey: key within the secret

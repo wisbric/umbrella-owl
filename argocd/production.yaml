@@ -11,7 +11,7 @@ spec:
 
   source:
     chart: umbrella-owl
-    repoURL: ghcr.io/wisbric/charts
+    repoURL: registry.gitlab.com/adfinisde/agentic-workspace/charts
     targetRevision: "0.1.0"
     helm:
       valueFiles:

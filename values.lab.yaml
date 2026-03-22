@@ -18,7 +18,7 @@ global:
     issuerUrl: "https://keycloak.devops.lab/realms/owls"
 
 # -----------------------------------------------------------------------------
-# GHCR registry credentials — pull private container images and Helm charts
+# GitLab registry credentials — pull private container images and Helm charts
 # -----------------------------------------------------------------------------
 registryCredentials:
   create: true
@@ -93,6 +93,7 @@ owlstack:
     outlineRunbookCollection: "Runbooks"
     outlinePostMortemCollection: "Post Mortems"
     keepUrl: "http://owl-keep-backend:8080"
+    keepFrontendUrl: "https://keep.devops.lab"
     mcpBackends: "keep=http://owl-mcp-keep:8082,k8s=http://owl-mcp-k8s:8083"
 
   mcp:
@@ -667,7 +668,7 @@ mcpServers:
     readOnly: true
   keep:
     enabled: true
-    image: ghcr.io/wisbric/keep-mcp:main
+    image: registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp:main
     keepUrl: "http://owl-keep-backend:8080"
     secretName: keep-secrets
     secretKey: KEEP_API_KEY

@@ -148,7 +148,7 @@ All MCP servers are optional and gated by `mcpServers.{service}.enabled`.
 | MCP Server | Image | Port | Purpose |
 |---|---|---|---|
 | owlstack-mcp | owlstack binary (`APP_MODE=mcp`) | 8081 | Owlstack tools (alerts, incidents, rosters, escalation, users) |
-| keep-mcp | `ghcr.io/wisbric/keep-mcp` | 8082 | Keep alert/incident management |
+| keep-mcp | `registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp` | 8082 | Keep alert/incident management |
 | mcp-k8s | `ghcr.io/containers/kubernetes-mcp-server` | 8083 | K8s cluster read-only access |
 | mcp-postgres | Anthropic official | 3000 | PostgreSQL read-only SQL |
 

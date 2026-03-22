@@ -20,10 +20,10 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       imagePullSecrets:
-        - name: ghcr-credentials
+        - name: gitlab-registry
       containers:
         - name: mcp-keep
-          image: {{ .Values.mcpServers.keep.image | default "ghcr.io/wisbric/keep-mcp:main" }}
+          image: {{ .Values.mcpServers.keep.image | default "registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp:main" }}
           env:
             - name: KEEP_URL
               value: {{ .Values.mcpServers.keep.keepUrl | default (printf "http://%s-keep-backend:8080" .Release.Name) | quote }}

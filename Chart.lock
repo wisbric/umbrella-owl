@@ -8,9 +8,6 @@ dependencies:
 - name: redis
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 20.6.2
-- name: keycloak
-  repository: oci://registry-1.docker.io/bitnamicharts
-  version: 25.2.0
 - name: zammad
   repository: https://zammad.github.io/zammad-helm
   version: 10.3.0
@@ -26,5 +23,5 @@ dependencies:
 - name: vector
   repository: https://helm.vector.dev
   version: 0.50.0
-digest: sha256:93eb4953f62578aa95577b81019ae85d7002c6b64015a2ff24654a4a492ac4ea
-generated: "2026-03-14T15:20:01.527280432+13:00"
+digest: sha256:9b4097de87bca5b949374a156757e0268f03d1ee3c891ac5d8e5adb343c11ab5
+generated: "2026-03-22T21:13:33.879454687+13:00"
