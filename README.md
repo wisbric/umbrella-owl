@@ -118,8 +118,7 @@ umbrella-owl/
 │   ├── integration.md
 │   ├── operations.md
 │   └── operator-design.md
-├── keycloak/
-└── .github/workflows/
+└── keycloak/
 ```
 
 ## CI/CD
