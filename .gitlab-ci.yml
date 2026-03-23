@@ -65,8 +65,8 @@ release:
       sed -i "s|^appVersion:.*|appVersion: \"$VERSION\"|" Chart.yaml
 
       # Switch owlstack dependency from file:// to OCI (owlstack project registry)
+      # Only change the repository, keep the owlstack version as-is
       sed -i "/name: owlstack/,/repository:/{
-        s|version: .*|version: \"$VERSION\"|
         s|repository: .*|repository: ${OWLSTACK_OCI}|
       }" Chart.yaml
 
