@@ -72,7 +72,7 @@ release:
       echo "--- Chart.yaml after patching ---"
       cat Chart.yaml
 
-      helm dep build .
+      helm dep update .
       helm lint .
       helm package . --destination /tmp/charts
       helm push "/tmp/charts/umbrella-owl-${VERSION}.tgz" "${OCI_REGISTRY}"
