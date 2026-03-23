@@ -1,8 +1,6 @@
 {{/*
-Ingress for Keep via oauth2-proxy
-Routes all Keep traffic through the oauth2-proxy for SSO authentication.
-The proxy handles /oauth2/* paths directly and forwards authenticated
-requests to the Keep frontend.
+Ingress for Keep oauth2-proxy endpoints.
+Handles /oauth2/* paths (login, callback, auth validation).
 */}}
 {{- if and .Values.keep.enabled .Values.keep.oauth2Proxy.enabled .Values.keep.oauth2Proxy.hostname }}
 apiVersion: networking.k8s.io/v1
@@ -29,13 +27,46 @@ spec:
                 name: {{ .Release.Name }}-keep-oauth2-proxy
                 port:
                   number: 4180
+  {{- if .Values.keep.ingressTls }}
+  tls:
+    {{- toYaml .Values.keep.ingressTls | nindent 4 }}
+  {{- end }}
+{{- end }}
+---
+{{/*
+Ingress for Keep frontend via nginx auth_request.
+Routes / directly to the Keep frontend. nginx validates the oauth2-proxy
+cookie via auth_request and forwards identity headers to the frontend.
+This allows NextAuth to read proxy headers and create sessions correctly.
+*/}}
+{{- if and .Values.keep.enabled .Values.keep.oauth2Proxy.enabled .Values.keep.oauth2Proxy.hostname }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-keep-frontend
+  labels:
+    {{- include "umbrella-owl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keep-frontend
+  annotations:
+    {{- with .Values.keep.ingressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/auth-url: "http://{{ .Release.Name }}-keep-oauth2-proxy.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://{{ .Values.keep.oauth2Proxy.hostname }}/oauth2/start?rd=$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Groups,X-Forwarded-Email,X-Forwarded-Groups"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.keep.oauth2Proxy.hostname }}
+      http:
+        paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ .Release.Name }}-keep-oauth2-proxy
+                name: {{ .Release.Name }}-keep-frontend
                 port:
-                  number: 4180
+                  number: 3000
   {{- if .Values.keep.ingressTls }}
   tls:
     {{- toYaml .Values.keep.ingressTls | nindent 4 }}
@@ -44,10 +75,9 @@ spec:
 ---
 {{/*
 Ingress for Keep backend API via nginx auth_request.
-Routes /backend/* directly to the Keep backend service, bypassing the frontend
-proxy. nginx validates the oauth2-proxy cookie via auth_request and forwards
-identity headers (X-Auth-Request-Email, X-Forwarded-Email) to the backend.
-This fixes 403 errors caused by the frontend dropping auth headers when proxying.
+Routes /backend/* directly to the Keep backend service.
+nginx validates the oauth2-proxy cookie via auth_request and forwards
+identity headers to the backend.
 */}}
 {{- if and .Values.keep.enabled .Values.keep.oauth2Proxy.enabled .Values.keep.oauth2Proxy.hostname }}
 apiVersion: networking.k8s.io/v1
