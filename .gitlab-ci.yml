@@ -20,7 +20,7 @@ default:
     cat > ../owlstack/deploy/helm/owlstack/Chart.yaml << 'EOF'
     apiVersion: v2
     name: owlstack
-    version: "0.4.0"
+    version: "0.4.1"
     description: Stub chart for CI lint
     EOF
     sed -i 's/^    //' ../owlstack/deploy/helm/owlstack/Chart.yaml
