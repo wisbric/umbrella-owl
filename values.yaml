@@ -445,6 +445,7 @@ fullnameOverride: ""
 # External Secrets — pull secrets from OpenBao
 externalSecrets:
   enabled: false
+  skipCaCopy: false  # Set true when OpenBao is on a different cluster (CA cert pre-created)
   store:
     server: "https://openbao-active.openbao.svc:8200"
     path: "secret"
