@@ -15,7 +15,7 @@ metadata:
   name: owl
   namespace: owl
 spec:
-  domain: devops.lab
+  domain: ops.dev-ai.wisbric.com
 
   owlstack:
     enabled: true

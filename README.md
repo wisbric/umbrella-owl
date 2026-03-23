@@ -10,7 +10,7 @@ This repo is deployment/wiring only (Helm values, templates, environment overlay
 
 | Component | Source | Purpose |
 |---|---|---|
-| `owlstack` | `file://../owlstack/deploy/helm/owlstack` (local chart dependency in this monorepo) | Unified operations app (incidents, alerts, on-call, ticket orchestration, customer portal) |
+| `owlstack` | Local dev: `file://../owlstack/deploy/helm/owlstack`; CI/ArgoCD: `oci://registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/owlstack/charts/owlstack` | Unified operations app (incidents, alerts, on-call, ticket orchestration, customer portal) |
 
 ### Third-Party Dependencies
 
@@ -18,7 +18,6 @@ This repo is deployment/wiring only (Helm values, templates, environment overlay
 |---|---|---|
 | `postgresql` (Bitnami) | Shared database | `postgresql.enabled` |
 | `redis` (Bitnami) | Cache/queues/sessions | `redis.enabled` |
-| `keycloak` (Bitnami) | OIDC IdP | `keycloak.enabled` |
 | `zammad` | Ticket backend | `zammad.enabled` |
 | `keep` | Alert management UI/API | `keep.enabled` |
 | `outline` | Knowledge/docs wiki | `outline.enabled` |
@@ -32,6 +31,7 @@ This repo is deployment/wiring only (Helm values, templates, environment overlay
 - Outline uses direct OIDC against Keycloak
 - Garage backs Outline file uploads
 - Vector can push alert events into Keep
+- Keycloak runs externally in the management cluster — NOT a subchart
 - Optional backup CronJob and NetworkPolicies are templated in this chart
 
 ## Quick Start
@@ -49,11 +49,13 @@ helm upgrade --install owl . \
 
 Production/development use their respective values files.
 
+> For production/lab deployment, see ArgoCD-based deployment in `docs/operations.md`.
+
 ## Values Layout
 
 Top-level keys map directly to subcharts or umbrella-only templates:
 
-- `owlstack`, `postgresql`, `redis`, `keycloak`, `zammad`, `keep`, `outline`, `garage`, `vector`
+- `owlstack`, `postgresql`, `redis`, `zammad`, `keep`, `outline`, `garage`, `vector`
 - `registryCredentials` (shared GitLab registry pull secret)
 - `outlineSetup` (Outline API-token bootstrap hook + retry CronJob)
 - `backup` (umbrella templated CronJob)
@@ -111,7 +113,11 @@ umbrella-owl/
 │   ├── keep-oauth2-proxy-ingress.yaml
 │   ├── secret-keep.yaml
 │   ├── secret-outline.yaml
-│   ├── keycloak-realm-import.yaml
+│   ├── external-secret-*.yaml (7 ExternalSecrets)
+│   ├── secret-store.yaml
+│   ├── mcp-k8s.yaml
+│   ├── mcp-keep.yaml
+│   ├── mcp-ingress.yaml
 │   └── ...
 ├── deploy/
 ├── docs/
@@ -125,6 +131,7 @@ umbrella-owl/
 
 - PR checks: `helm lint`, `helm template`, dependency validation
 - Tag `v*`: package/publish umbrella chart to GitLab OCI registry
+- GitLab project IDs: umbrella-owl `80325018`, owlstack `80325016`
 
 ## License
 

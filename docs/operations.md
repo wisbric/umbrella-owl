@@ -9,7 +9,21 @@
 - Helm 3.12+
 - DNS/TLS for your chosen hostnames
 
-### Lab Install
+### ArgoCD (Primary)
+
+The owl platform is deployed via ArgoCD from the management cluster (`rke2-bootstrap-external`).
+
+- App definition: `dev-ai-ionos/argocd/apps/platform/owl.yaml`
+- Chart source: `oci://registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/umbrella-owl/charts/umbrella-owl` @ targetRevision
+- Values source: `dev-ai-ionos` git repo, `platform/owl/values.yaml`
+- Sync policy: automated with selfHeal + prune
+
+To force a sync after publishing a new chart version:
+1. Update `targetRevision` in the ArgoCD app yaml
+2. Push to dev-ai-ionos main branch
+3. ArgoCD auto-syncs; if OCI cache is stale, restart the repo-server pod
+
+### Local Development / Manual Override
 
 ```bash
 helm dep update .
@@ -19,7 +33,7 @@ helm upgrade --install owl . \
   -f values.lab-secrets.yaml
 ```
 
-### Upgrade
+### Upgrade (Manual)
 
 ```bash
 helm dep update .
@@ -106,7 +120,7 @@ Check all three components together:
 
 1. Check Owlstack API logs for webhook auth tenant:
    `kubectl logs deploy/owl-owlstack-api -n owl --tail=300 | rg "webhooks/keep|authenticated via API key"`
-2. Confirm webhook requests authenticate to the expected tenant slug (for lab: `acme`).
+2. Confirm webhook requests authenticate to the expected tenant slug (for lab: `default`).
 3. Confirm Vector `NIGHTOWL_API_KEY` reads from `owl-owlstack` key `OWLSTACK_WEBHOOK_KEY`.
 4. Confirm Owlstack worker has `OWLSTACK_WEBHOOK_TENANT` set to the same tenant slug.
 
@@ -150,6 +164,32 @@ kubectl create job --from=cronjob/owl-outline-setup-retry \
 kubectl logs -n owl job/<manual-job-name>
 ```
 
+## Database Setup (First Deploy)
+
+PostgreSQL databases for keep, outline, and zammad must be created manually.
+The Bitnami PostgreSQL chart only creates the primary database.
+
+```bash
+kubectl exec owl-postgresql-0 -n owl -- bash -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres'
+
+CREATE USER keep WITH PASSWORD '<from OpenBao>';
+CREATE DATABASE keep OWNER keep;
+CREATE USER outline WITH PASSWORD '<from OpenBao>';
+CREATE DATABASE outline OWNER outline;
+CREATE USER zammad WITH PASSWORD '<from OpenBao>';
+CREATE DATABASE zammad OWNER zammad;
+\c keep
+ALTER SCHEMA public OWNER TO keep;
+\c outline
+ALTER SCHEMA public OWNER TO outline;
+\c zammad
+ALTER SCHEMA public OWNER TO zammad;
+```
+
+**Important:** Passwords with special characters (+, /, =) will break Zammad's URI parser. Use URL-safe passwords for the zammad user.
+
+**Password drift:** Bitnami PostgreSQL only reads passwords from K8s secrets at first boot. If ESO updates the secret, the PostgreSQL internal password does NOT change. To fix: temporarily set pg_hba.conf to `trust`, run `ALTER ROLE`, then revert.
+
 ## Common Ops Tasks
 
 ### Restart Owlstack after new images are pushed
@@ -178,3 +218,4 @@ Then deploy and verify pod-to-pod traffic for critical flows (Owlstack <-> DB/Re
 - [ ] TLS enabled for public endpoints
 - [ ] Default/generated passwords rotated
 - [ ] Image tags pinned (avoid `main` in production)
+- [ ] Database passwords are URL-safe (no `+`, `/`, `=`) to avoid URI parser breakage in Zammad

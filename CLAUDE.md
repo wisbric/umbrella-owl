@@ -17,11 +17,15 @@ It does **not** contain Owlstack application code.
 
 `Chart.yaml` dependencies include:
 
-- `owlstack` via local chart path: `file://../owlstack/deploy/helm/owlstack`
+- `owlstack` — dual-mode dependency:
+  - **Local dev:** `file://../owlstack/deploy/helm/owlstack` (edit `Chart.yaml` repository field)
+  - **CI releases:** `oci://registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/owlstack/charts` (published by owlstack CI)
 - Third-party charts: PostgreSQL, Redis, Zammad, Keep, Outline, Garage, Vector
 - Keycloak is external (central platform Keycloak at `keycloak.mgmt.dev-ai.wisbric.com/realms/platform`)
 
-For external/public chart releases, Helm packages these dependencies into the release artifact.
+Current versions: owlstack `0.4.2`, umbrella-owl `0.6.4`.
+
+For CI releases, Helm packages all dependencies (including the OCI-sourced owlstack chart) into the release artifact.
 
 ## Critical Architecture Decisions
 
@@ -37,7 +41,7 @@ For external/public chart releases, Helm packages these dependencies into the re
 
 Umbrella chart deploys optional MCP servers for AI agent integration (all gated by `mcpServers.{service}.enabled`):
 
-- `templates/mcp-ingress.yaml` — ingress at `nightowl.devops.lab/mcp/`
+- `templates/mcp-ingress.yaml` — ingress at `nightowl.ops.dev-ai.wisbric.com/mcp/`
 - `templates/mcp-k8s.yaml` — K8s MCP server (Red Hat, read-only) with RBAC
 - `templates/mcp-keep.yaml` — Keep MCP server (`registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/keep-mcp`)
 - `templates/mcp-postgres.yaml` — PostgreSQL MCP server (Anthropic official)
@@ -68,10 +72,25 @@ The owlstack MCP server itself is deployed by the owlstack subchart (`owlstack.m
 
 ## Lab Workflow
 
+The primary deployment method is **ArgoCD** from the management cluster. See `dev-ai-ionos/argocd/apps/platform/owl.yaml` for the app definition.
+
+For local development or manual overrides:
+
 ```bash
 helm dep update .
 helm upgrade --install owl . -n owl --create-namespace -f values.lab.yaml -f values.lab-secrets.yaml
 ```
+
+## ESO / Secrets
+
+The umbrella chart includes External Secrets Operator (ESO) templates for pulling secrets from OpenBao:
+
+- `templates/external-secret-*.yaml` — 7 ExternalSecrets: owlstack, keep, outline, postgresql, redis, zammad, registry
+- `templates/secret-store.yaml` — SecretStore for OpenBao connection
+- OpenBao paths: `secret/platform/owl/*`
+- Kubernetes auth: service account `owl-eso`, role `eso-owl`, auth path `kubernetes-projects`
+
+Gated by `externalSecrets.enabled` — when `false`, secrets are provided via manual Helm values.
 
 ## Conventions
 
