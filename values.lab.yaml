@@ -99,6 +99,7 @@ owlstack:
 
   secrets:
     create: false  # Managed by ExternalSecret
+    existingSecret: "owl-owlstack"
     oidcClientId: "nightowl"
     oidcRedirectUrl: "https://nightowl.ops.dev-ai.wisbric.com/auth/oidc/callback"
 
