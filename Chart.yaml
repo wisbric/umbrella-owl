@@ -2,8 +2,8 @@ apiVersion: v2
 name: umbrella-owl
 description: Umbrella Helm chart for the Wisbric owl ecosystem
 type: application
-version: 0.6.0
-appVersion: "0.6.0"
+version: 0.6.1
+appVersion: "0.6.1"
 maintainers:
   - name: Wisbric
     url: https://wisbric.com
@@ -17,7 +17,7 @@ keywords:
 dependencies:
   # -- Owl applications (local chart for dev, OCI from GitLab for CI)
   - name: owlstack
-    version: "0.4.0"
+    version: "0.4.1"
     repository: "file://../owlstack/deploy/helm/owlstack"
 
   # -- Third-party dependencies (upstream registries)
