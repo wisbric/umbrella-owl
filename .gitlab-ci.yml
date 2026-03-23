@@ -3,7 +3,10 @@ stages:
   - release
 
 variables:
-  OCI_REGISTRY: "oci://registry.gitlab.com/adfinisde/agentic-workspace/charts"
+  # Project-level OCI registry for publishing this chart
+  OCI_REGISTRY: "oci://${CI_REGISTRY_IMAGE}/charts"
+  # Owlstack chart OCI path (published by owlstack CI)
+  OWLSTACK_OCI: "oci://registry.gitlab.com/adfinisde/agentic-workspace/ai-ops/owlstack/charts"
 
 default:
   image:
@@ -60,10 +63,10 @@ release:
       sed -i "s|^version:.*|version: \"$VERSION\"|" Chart.yaml
       sed -i "s|^appVersion:.*|appVersion: \"$VERSION\"|" Chart.yaml
 
-      # Switch owlstack dependency from file:// to OCI registry
+      # Switch owlstack dependency from file:// to OCI (owlstack project registry)
       sed -i "/name: owlstack/,/repository:/{
         s|version: .*|version: \"$VERSION\"|
-        s|repository: .*|repository: ${OCI_REGISTRY}|
+        s|repository: .*|repository: ${OWLSTACK_OCI}|
       }" Chart.yaml
 
       echo "--- Chart.yaml after patching ---"
