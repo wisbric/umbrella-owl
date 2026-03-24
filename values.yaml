@@ -140,6 +140,7 @@ postgresql:
   auth:
     postgresPassword: ""       # MUST override — no default
     database: nightowl
+    usePasswordFiles: false    # Override v18 default to keep env-var-based auth
   primary:
     persistence:
       size: 20Gi
