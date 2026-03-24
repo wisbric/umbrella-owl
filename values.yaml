@@ -81,6 +81,7 @@ owlstack:
     workerPollSeconds: "60"
     zammadUrl: ""
     outlineUrl: ""
+    outlineExternalUrl: ""
     outlineRunbookCollection: ""
     outlinePostMortemCollection: ""
     webhookTenant: ""
