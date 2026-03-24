@@ -23,17 +23,18 @@ It does **not** contain Owlstack application code.
 - Third-party charts: PostgreSQL, Redis, Zammad, Keep, Outline, Garage, Vector
 - Keycloak is external (central platform Keycloak at `keycloak.mgmt.dev-ai.wisbric.com/realms/platform`)
 
-Current versions: owlstack `0.4.2`, umbrella-owl `0.6.4`.
+Current versions: owlstack `0.4.2`, umbrella-owl `0.7.2`.
 
 For CI releases, Helm packages all dependencies (including the OCI-sourced owlstack chart) into the release artifact.
 
 ## Critical Architecture Decisions
 
-- Keep OSS authentication is implemented with `oauth2-proxy` (Keycloak OIDC) rather than native Keep Keycloak mode.
-- Keep traffic is split across ingress paths:
-  - `/` and `/oauth2/*` -> oauth2-proxy
-  - `/backend/*` -> keep backend (nginx auth_request headers)
-  - `/websocket/*` -> keep websocket service
+- Keep OSS authentication uses `oauth2-proxy` (Keycloak OIDC) via nginx **auth_request** pattern (not as upstream proxy). Requires Keep >= 0.49.0 for the `OAuth2Proxy` NextAuth credentials provider.
+- Keep traffic is split across three ingresses:
+  - `/oauth2/*` -> oauth2-proxy (login/callback/auth validation only)
+  - `/` -> Keep frontend directly (nginx validates via auth_request to oauth2-proxy `/oauth2/auth`, forwards identity headers)
+  - `/backend/*`, `/websocket/*` -> Keep backend/websocket (nginx validates via auth_request, forwards identity headers)
+- nginx `proxy-buffer-size: 16k` required on oauth2-proxy ingress (Keycloak session cookies exceed default 4KB)
 - Outline authenticates directly with Keycloak OIDC and stores files in Garage (S3 API).
 - Vector can push alerts to Keep (`/alerts/event`) using Keep API key auth.
 
