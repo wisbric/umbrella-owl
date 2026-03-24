@@ -2,8 +2,8 @@ apiVersion: v2
 name: umbrella-owl
 description: Umbrella Helm chart for the Wisbric owl ecosystem
 type: application
-version: 0.6.6
-appVersion: "0.6.6"
+version: 0.6.7
+appVersion: "0.6.7"
 maintainers:
   - name: Wisbric
     url: https://wisbric.com
