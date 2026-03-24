@@ -38,7 +38,6 @@ spec:
             - --email-domain=*
             - --pass-user-headers=true
             - --set-xauthrequest=true
-            - --pass-access-token=true
             - --cookie-secure=true
             - --cookie-name=_keep_oauth2
             - --skip-provider-button=true
