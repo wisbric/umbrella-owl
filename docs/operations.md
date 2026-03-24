@@ -124,6 +124,23 @@ Check all three components together:
 3. Confirm Vector `NIGHTOWL_API_KEY` reads from `owl-owlstack` key `OWLSTACK_WEBHOOK_KEY`.
 4. Confirm Owlstack worker has `OWLSTACK_WEBHOOK_TENANT` set to the same tenant slug.
 
+### Keep poller returning 403
+
+The worker's Keep incident poller uses `OWLSTACK_KEEP_API_KEY` from the `owl-owlstack` K8s secret.
+This must be the **admin** API key, not the Vector webhook key.
+
+1. Check ESO mapping: the property should be `admin-api-key`, not `api-key`:
+   ```bash
+   kubectl get externalsecret owl-owlstack -n owl -o jsonpath='{.spec.data[?(@.secretKey=="OWLSTACK_KEEP_API_KEY")].remoteRef.property}'
+   # Expected: admin-api-key
+   ```
+2. Verify the key in the secret matches `KEEP_DEFAULT_API_KEYS` nightowl entry:
+   ```bash
+   kubectl get secret owl-owlstack -n owl -o jsonpath='{.data.OWLSTACK_KEEP_API_KEY}' | base64 -d | cut -c1-8
+   # Should match the nightowl:admin entry prefix in keep-secrets KEEP_DEFAULT_API_KEYS
+   ```
+3. After fixing, restart the worker: `kubectl rollout restart deployment/owl-owlstack-worker -n owl`
+
 ### Keep -> Owlstack webhook not creating incidents
 
 1. Check Owlstack API logs:
@@ -139,29 +156,54 @@ Check all three components together:
 2. Validate Owlstack has `outlineUrl` and API token values
 3. Ticket document search/link should fail gracefully if Outline is unavailable
 
-### Outline API token bootstrap (first-login flow)
+### Outline API token setup
 
-The chart now uses a fail-soft + retry strategy:
+Outline API tokens are JWTs (`ol_api_*` format). They **cannot** be created by manual DB insert — they must be generated through Outline's REST API with a valid session.
 
-1. Hook Job (`owl-outline-setup`) runs on install/upgrade and exits successfully if no Outline admin exists yet.
-2. Retry CronJob (`owl-outline-setup-retry`) runs on schedule and applies setup SQL idempotently.
-3. After first OIDC login creates an Outline admin user, the next CronJob run inserts/ensures the API token automatically.
+**Setup steps:**
 
-Verification:
+1. Ensure at least one user has logged into Outline via OIDC (creates an admin user)
+2. Generate a session JWT from within the Outline pod:
+   ```bash
+   kubectl exec -n owl deploy/owl-outline -- node -e "
+   require('/opt/outline/build/server/env');
+   const { sequelize } = require('/opt/outline/build/server/storage/database');
+   const { User } = require('/opt/outline/build/server/models');
+   (async () => {
+     await sequelize.authenticate();
+     const user = await User.findOne({ where: { role: 'admin' } });
+     console.log(user.getJwtToken());
+     process.exit(0);
+   })().catch(e => { console.error(e); process.exit(1); });
+   "
+   ```
+3. Create an API key using the session JWT:
+   ```bash
+   kubectl run -n owl outline-key --rm -i --restart=Never --image=curlimages/curl -- \
+     curl -s -X POST http://owl-outline:8081/api/apiKeys.create \
+     -H "Authorization: Bearer <SESSION_JWT>" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"owlstack-integration"}'
+   ```
+4. Store the returned `value` field (`ol_api_*`) in OpenBao:
+   ```bash
+   kubectl exec -n openbao openbao-0 -- bao kv patch secret/platform/owl/owlstack \
+     outline-api-token="ol_api_<token>"
+   ```
+5. Force ESO refresh:
+   ```bash
+   kubectl annotate externalsecret owl-owlstack -n owl force-sync=$(date +%s) --overwrite
+   ```
+6. Restart owlstack pods to pick up the new token
 
+**Verification:**
 ```bash
-# Check one-shot hook result (non-blocking)
-kubectl get jobs -n owl | rg outline-setup
+# Check Outline integration is enabled in API logs
+kubectl logs -n owl deploy/owl-owlstack-api | grep outline
 
-# Check retry CronJob is present and scheduled
-kubectl get cronjob owl-outline-setup-retry -n owl
-
-# Trigger immediate retry run (optional)
-kubectl create job --from=cronjob/owl-outline-setup-retry \
-  manual-outline-setup-$(date +%s) -n owl
-
-# Inspect retry logs
-kubectl logs -n owl job/<manual-job-name>
+# Test runbooks endpoint
+API_KEY=$(kubectl get secret owl-owlstack -n owl -o jsonpath='{.data.OWLSTACK_API_KEY}' | base64 -d)
+curl -sk -H "X-API-Key: $API_KEY" https://nightowl.ops.dev-ai.wisbric.com/api/v1/runbooks
 ```
 
 ## Database Setup (First Deploy)

@@ -23,7 +23,7 @@ It does **not** contain Owlstack application code.
 - Third-party charts: PostgreSQL, Redis, Zammad, Keep, Outline, Garage, Vector
 - Keycloak is external (central platform Keycloak at `keycloak.mgmt.dev-ai.wisbric.com/realms/platform`)
 
-Current versions: owlstack `0.4.2`, umbrella-owl `0.7.2`.
+Current versions: owlstack `0.4.2`, umbrella-owl `0.7.3`.
 
 For CI releases, Helm packages all dependencies (including the OCI-sourced owlstack chart) into the release artifact.
 

@@ -63,8 +63,15 @@ Values:
 
 | Value | Description |
 |---|---|
-| `owlstack.config.outlineUrl` | Outline public URL |
-| `owlstack.secrets.outlineApiToken` | Outline API token |
+| `owlstack.config.outlineUrl` | Outline URL (use internal `http://owl-outline:8081` to avoid hairpin NAT) |
+| `owlstack.secrets.outlineApiToken` | Outline API token (`ol_api_*` JWT format — must be created via Outline's `/api/apiKeys.create` endpoint) |
+
+> **Note:** Outline API tokens are JWTs (`ol_api_*` prefix), not raw secrets. They must be created
+> through Outline's API with a valid session, not by manual DB insert. The ESO mapping pulls from
+> `platform/owl/owlstack.outline-api-token` in OpenBao.
+
+> **Note:** `FORCE_HTTPS=false` must be set on the Outline deployment when using internal HTTP URLs.
+> Outline 1.3.0+ defaults to `FORCE_HTTPS=true` which returns HTTP 405 for internal POST requests.
 
 ## 3. Keep Integration Patterns
 
@@ -81,6 +88,10 @@ There are two valid flows in this stack:
 - Owlstack worker also polls Keep incidents via API for source-of-truth sync
 - Keep-sourced incidents are read-only for core fields in Owlstack; Owlstack adds enrichment (runbook + post-mortem links, assignment metadata)
 
+> **API key distinction:** Keep has two API keys in OpenBao (`platform/owl/keep`):
+> - `api-key` — Vector webhook ingestion key (`KEEP_API_KEY`)
+> - `admin-api-key` — Owlstack admin access key (`OWLSTACK_KEEP_API_KEY` in ESO)
+
 ## 4. Owlstack <-> Keycloak (OIDC)
 
 Owlstack uses OIDC authorization code flow.
@@ -96,12 +107,14 @@ Owlstack uses OIDC authorization code flow.
 
 Keep OSS is fronted by oauth2-proxy for Keycloak SSO.
 
-Routing model:
+Routing model (nginx `auth_request` pattern — requires Keep >= 0.49.0):
 
-- `/oauth2/*` -> oauth2-proxy
-- `/` -> oauth2-proxy -> Keep frontend
-- `/backend/*` -> Keep backend with `auth_request` header propagation
-- `/websocket/*` -> Keep websocket service (required for realtime UI updates)
+- `/oauth2/*` -> oauth2-proxy (login/callback/auth validation only)
+- `/` -> Keep frontend directly (nginx validates via `auth_request` to `/oauth2/auth`, forwards identity headers)
+- `/backend/*`, `/websocket/*` -> Keep backend/websocket (nginx validates via `auth_request`, forwards identity headers)
+
+> **Note:** nginx `proxy-buffer-size: 16k` is required on the oauth2-proxy ingress because
+> Keycloak session cookies exceed the default 4KB buffer, causing 502 on oauth2 callback.
 
 Key values:
 
