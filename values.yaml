@@ -86,6 +86,7 @@ owlstack:
     outlinePostMortemCollection: ""
     webhookTenant: ""
     keepUrl: ""
+    zammadFrontendUrl: ""
 
   secrets:
     create: true
